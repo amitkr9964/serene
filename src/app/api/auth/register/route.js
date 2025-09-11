@@ -17,7 +17,7 @@ export async function POST(request) {
     }
 
     // Validate DTU email format
-    if (!email.endsWith(process.env.NEXT_PUBLIC_INSTITUTION_DOMAIN)) {
+    if (typeof email !== 'string' || !email.endsWith(process.env.NEXT_PUBLIC_INSTITUTION_DOMAIN)) {
       return NextResponse.json(
         { error: `Please use your DTU email address (${process.env.NEXT_PUBLIC_INSTITUTION_DOMAIN})` },
         { status: 400 }

@@ -4,7 +4,7 @@ import { MongoDBAdapter } from '@auth/mongodb-adapter'
 import { MongoClient } from 'mongodb'
 import bcrypt from 'bcryptjs'
 
-const client = new MongoClient(process.env.DATABASE_URL)
+const client = new MongoClient(process.env.MONGODB_URI)
 const clientPromise = client.connect()
 
 export const authOptions = {
@@ -22,8 +22,8 @@ export const authOptions = {
         }
 
         // Validate DTU email format
-        if (!credentials.email.endsWith('@dtu.ac.in')) {
-          throw new Error('Please use your DTU email address (@dtu.ac.in)')
+        if (typeof credentials.email !== 'string' || !credentials.email.endsWith(process.env.NEXT_PUBLIC_INSTITUTION_DOMAIN)) {
+          throw new Error(`Please use your DTU email address (${process.env.NEXT_PUBLIC_INSTITUTION_DOMAIN})`)
         }
 
         const db = (await clientPromise).db(process.env.DATABASE_NAME)
@@ -74,10 +74,10 @@ export const authOptions = {
     },
     async redirect({ url, baseUrl }) {
       // Redirect based on user type after login
-      if (url.startsWith('/auth/signin')) {
+      if (typeof url === 'string' && url.startsWith('/auth/signin')) {
         return baseUrl + '/dashboard'
       }
-      return url.startsWith(baseUrl) ? url : baseUrl
+      return (typeof url === 'string' && url.startsWith(baseUrl)) ? url : baseUrl
     }
   },
   pages: {
