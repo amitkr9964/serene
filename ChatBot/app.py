@@ -202,7 +202,10 @@ def chat_api():
             conversation_sessions[session_id] = {
                 'history': [],
                 'offered_test': False,
-                'state': 'normal'  # normal, awaiting_test_choice, awaiting_test_responses
+                'state': 'normal',  # normal, awaiting_test_choice, in_test
+                'current_test': None,  # PHQ-9 or GAD-7
+                'test_responses': [],  # Store responses as we go
+                'current_question': 0  # Track which question we're on
             }
         
         session = conversation_sessions[session_id]
@@ -230,43 +233,95 @@ def chat_api():
         # Handle test selection (like gem3.py main function)
         if session['state'] == 'awaiting_test_choice':
             if user_input == "1":
-                session['state'] = 'normal'
+                session['state'] = 'in_test'
+                session['current_test'] = 'PHQ-9'
+                session['test_responses'] = []
+                session['current_question'] = 0
+                
                 test_info = ("📋 Patient Health Questionnaire – 9 (Depression)\n"
                            "Over the last 2 weeks, how often have you been bothered by the following?\n"
                            "0=Not at all | 1=Several days | 2=More than half the days | 3=Nearly every day\n\n"
-                           "Please respond with 9 numbers (0-3) separated by spaces for each question:\n\n"
-                           "1. Little interest or pleasure in doing things\n"
-                           "2. Feeling down, depressed, or hopeless\n"
-                           "3. Trouble falling or staying asleep, or sleeping too much\n"
-                           "4. Feeling tired or having little energy\n"
-                           "5. Poor appetite or overeating\n"
-                           "6. Feeling bad about yourself — or that you are a failure\n"
-                           "7. Trouble concentrating on things, such as reading or watching TV\n"
-                           "8. Moving/speaking slowly or being fidgety/restless\n"
-                           "9. Thoughts that you would be better off dead, or of hurting yourself\n\n"
-                           "Example: 1 2 3 0 1 2 1 0 3")
+                           f"Question 1 of 9:\n{tests['PHQ-9']['questions'][0]}\n\n"
+                           "Please enter 0, 1, 2, or 3:")
                 return jsonify({'reply': test_info})
             elif user_input == "2":
-                session['state'] = 'normal'
+                session['state'] = 'in_test'
+                session['current_test'] = 'GAD-7'
+                session['test_responses'] = []
+                session['current_question'] = 0
+                
                 test_info = ("📋 Generalized Anxiety Disorder – 7\n"
                            "Over the last 2 weeks, how often have you been bothered by the following?\n"
                            "0=Not at all | 1=Several days | 2=More than half the days | 3=Nearly every day\n\n"
-                           "Please respond with 7 numbers (0-3) separated by spaces for each question:\n\n"
-                           "1. Feeling nervous, anxious or on edge\n"
-                           "2. Not being able to stop or control worrying\n"
-                           "3. Worrying too much about different things\n"
-                           "4. Trouble relaxing\n"
-                           "5. Being so restless that it is hard to sit still\n"
-                           "6. Becoming easily annoyed or irritable\n"
-                           "7. Feeling afraid as if something awful might happen\n\n"
-                           "Example: 2 1 3 0 1 2 1")
+                           f"Question 1 of 7:\n{tests['GAD-7']['questions'][0]}\n\n"
+                           "Please enter 0, 1, 2, or 3:")
                 return jsonify({'reply': test_info})
             else:
                 session['state'] = 'normal'
                 reply = "Invalid choice. Type 'test' to try again."
                 return jsonify({'reply': reply})
         
-        # Check if input looks like test responses
+        # Handle individual test responses (like gem3.py run_test function)
+        if session['state'] == 'in_test':
+            try:
+                score = int(user_input.strip())
+                if score not in [0, 1, 2, 3]:
+                    return jsonify({'reply': "Please enter 0, 1, 2, or 3."})
+                
+                # Store the response
+                session['test_responses'].append(score)
+                session['current_question'] += 1
+                
+                current_test = session['current_test']
+                total_questions = len(tests[current_test]['questions'])
+                
+                # Check if we've answered all questions
+                if session['current_question'] >= total_questions:
+                    # Calculate final score
+                    total_score = sum(session['test_responses'])
+                    test = tests[current_test]
+                    
+                    # Determine severity level
+                    severity = "Unknown"
+                    for cutoff, level in test["cutoffs"]:
+                        if total_score <= cutoff:
+                            severity = level
+                            break
+                    
+                    max_score = 27 if current_test == 'PHQ-9' else 21
+                    result = f"📊 Your {current_test} score: {total_score}/{max_score} ({severity})\n\n"
+                    
+                    if severity == "Minimal":
+                        result += "✅ Great! You seem to be doing well."
+                    elif severity in ["Mild", "Moderate"]:
+                        result += "⚠️ Consider speaking with a counselor or trusted friend."
+                    else:  # Severe
+                        result += "🚨 Please reach out to a mental health professional soon."
+                        
+                    result += "\n\n⚠ Note: This tool is for awareness. Please seek help if you're in crisis."
+                    
+                    # Reset session state
+                    session['state'] = 'normal'
+                    session['current_test'] = None
+                    session['test_responses'] = []
+                    session['current_question'] = 0
+                    
+                    # Add to history
+                    session['history'].append((f"{current_test} Test", result))
+                    
+                    return jsonify({'reply': result})
+                else:
+                    # Ask next question
+                    next_question = tests[current_test]['questions'][session['current_question']]
+                    reply = (f"Question {session['current_question'] + 1} of {total_questions}:\n"
+                           f"{next_question}\n\n"
+                           "Please enter 0, 1, 2, or 3:")
+                    return jsonify({'reply': reply})
+                    
+            except ValueError:
+                return jsonify({'reply': "Please enter a valid number (0, 1, 2, or 3)."})
+        
+        # Legacy: Check if input looks like test responses (keep for backward compatibility)
         parts = user_input.split()
         if len(parts) == 9 and all(p.isdigit() and int(p) in [0,1,2,3] for p in parts):
             # PHQ-9 responses
