@@ -6,6 +6,8 @@ import Navbar from '../../components/Navbar';
 import { useTheme } from '../../contexts/ThemeContext';
 import AnimatedIcon from '../../components/AnimatedIcon';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -80,31 +82,19 @@ export default function ChatPage() {
 
   const getBotResponse = async (message) => {
     try {
-      console.log('Sending message to API:', message);
-      console.log('Session ID:', sessionId);
-      
-      const response = await fetch('http://127.0.0.1:5000/chat', {
+      const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          message: message,
-          session_id: sessionId 
-        }),
+        body: JSON.stringify({ message, session_id: sessionId }),
       });
-      
-      console.log('API response status:', response.status);
-      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
       const data = await response.json();
-      console.log('API response data preview:', data.reply.substring(0, 100) + '...');
       return data.reply;
     } catch (error) {
-      console.error('Detailed error calling chat API:', error);
       return "I'm sorry, I'm having trouble connecting to the server. Please try again.";
     }
   };

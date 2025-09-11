@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 import os
+import logging
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -99,7 +100,7 @@ def looks_distressed(text: str) -> bool:
 
 def chat(user_input, history):
     """Send message + history to Gemini and return response text."""
-    print(f"Chat function called with input: '{user_input}' and history length: {len(history)}")
+    logger.info(f"Chat function called with input: '{user_input}' and history length: {len(history)}")
     
     if is_crisis(user_input):
         return (
@@ -133,7 +134,7 @@ def chat(user_input, history):
             return "I'm here to support you with your mental health concerns. How can I help you today?"
                 
     except Exception as e:
-        print(f"Error in chat function: {e}")
+        logger.error(f"Error in chat function: {e}")
         return "I'm having a technical moment! Could you try asking again? I'm here to support you! 🤖"
 
 def run_test_api(test_name, responses):
@@ -171,8 +172,19 @@ def run_test_api(test_name, responses):
     return result
 
 app = Flask(__name__)
-# Configure CORS properly for development
-CORS(app, origins=['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'], 
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Configure CORS for production - allow your deployed frontend
+CORS(app, origins=[
+    'http://localhost:3000', 
+    'http://localhost:3001', 
+    'http://127.0.0.1:3000', 
+    'http://127.0.0.1:3001',
+    'https://serene-sih.vercel.app'  # Your actual frontend domain
+], 
      methods=['GET', 'POST', 'OPTIONS'], 
      allow_headers=['Content-Type'])
 
@@ -184,11 +196,11 @@ conversation_sessions = {}
 def chat_api():
     # Handle preflight OPTIONS request
     if request.method == 'OPTIONS':
-        print("Handling OPTIONS preflight request")
+        logger.info("Handling OPTIONS preflight request")
         return '', 200
         
     try:
-        print(f"Received request from: {request.remote_addr}")
+        logger.info(f"Received request from: {request.remote_addr}")
         
         data = request.json
         user_input = data.get('message', '').strip()
@@ -211,10 +223,10 @@ def chat_api():
         session = conversation_sessions[session_id]
         history = session['history']
         
-        print(f"Session ID: {session_id}")
-        print(f"Current history length: {len(history)}")
-        print(f"User input: {user_input}")
-        print(f"Session state: {session['state']}")
+        logger.info(f"Session ID: {session_id}")
+        logger.info(f"Current history length: {len(history)}")
+        logger.info(f"User input: {user_input}")
+        logger.info(f"Session state: {session['state']}")
         
         # Handle quit/exit commands (like gem3.py main function)
         if user_input.lower() in ['quit', 'exit', 'bye']:
@@ -365,17 +377,17 @@ def chat_api():
         # Update conversation history
         session['history'].append((user_input, reply))
         
-        print(f"Bot reply length: {len(reply)}")
-        print(f"Updated history length: {len(session['history'])}")
-        print(f"Reply preview: {reply[:100]}...")
+        logger.info(f"Bot reply length: {len(reply)}")
+        logger.info(f"Updated history length: {len(session['history'])}")
+        logger.info(f"Reply preview: {reply[:100]}...")
         
         response = jsonify({'reply': reply})
         return response
         
     except Exception as e:
-        print(f"Error in chat_api: {str(e)}")
+        logger.error(f"Error in chat_api: {str(e)}")
         import traceback
-        traceback.print_exc()
+        logger.error(traceback.format_exc())
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/health', methods=['GET'])
@@ -384,7 +396,13 @@ def health_check():
     return jsonify({'status': 'OK', 'message': 'Chat server is running'})
 
 if __name__ == '__main__':
-    print("🧠 Mental Health Support Chatbot Server")
-    print("Starting Flask chat server on http://127.0.0.1:5000")
-    print("Type 'test' for mental health screening, 'quit' to exit.\n")
-    app.run(host='0.0.0.0',port=int(os.environ.get("PORT", 5000)), debug=False)
+    logger.info("🧠 Mental Health Support Chatbot Server")
+    logger.info("Starting Flask chat server")
+    logger.info("Type 'test' for mental health screening, 'quit' to exit.")
+    
+    # Get port from environment variable (for production deployment)
+    port = int(os.environ.get("PORT", 5000))
+    # Set debug to False for production
+    debug_mode = os.environ.get("FLASK_ENV") == "development"
+    
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
