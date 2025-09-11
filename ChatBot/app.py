@@ -1,0 +1,335 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS, cross_origin
+import os
+from dotenv import load_dotenv
+import google.generativeai as genai
+
+# ---------------- Setup Gemini (copied from gem3.py) ---------------------------------
+load_dotenv()
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Configure safety settings to be less restrictive for mental health support
+safety_settings = [
+    {
+        "category": "HARM_CATEGORY_HARASSMENT",
+        "threshold": "BLOCK_ONLY_HIGH"
+    },
+    {
+        "category": "HARM_CATEGORY_HATE_SPEECH",
+        "threshold": "BLOCK_ONLY_HIGH"
+    },
+    {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "BLOCK_ONLY_HIGH"
+    },
+    {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "BLOCK_ONLY_HIGH"
+    }
+]
+
+model = genai.GenerativeModel("gemini-2.5-flash", safety_settings=safety_settings)
+
+generation_config = {
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "top_k": 50,
+    "max_output_tokens": 1024,
+}
+
+SYSTEM_PROMPT = """
+You are a supportive psychological assistant for higher education students.
+Your role:
+- Answer in simple language to make it easy to understand for the students.
+- Monitor emotional wellbeing through empathetic conversation.
+- Detect stress, anxiety, depression cues.
+- Suggest healthy coping strategies (exercise, meditation, time management).
+- Motivate students with positivity and encouragement.
+- If the student wants to take PHQ-9 or GAD-7 screening, launch it.
+- If they talk about harming themselves, advise them to get immediate help.
+- Act like a friend not a doctor so that students feel free to talk.
+- Also give advice related to relationships.
+Always reply conversationally, never like a robot.
+"""
+
+# ---------------- Screening data (copied from gem3.py) -------------------------------
+tests = {
+    "PHQ-9": {
+        "title": "Patient Health Questionnaire – 9 (Depression)",
+        "questions": [
+            "Little interest or pleasure in doing things",
+            "Feeling down, depressed, or hopeless",
+            "Trouble falling or staying asleep, or sleeping too much",
+            "Feeling tired or having little energy",
+            "Poor appetite or overeating",
+            "Feeling bad about yourself — or that you are a failure or have let yourself or your family down",
+            "Trouble concentrating on things, such as reading or watching TV",
+            "Moving/speaking so slowly that others notice, or being fidgety/restless",
+            "Thoughts that you would be better off dead, or of hurting yourself",
+        ],
+        "cutoffs": [(4, "Minimal"), (9, "Mild"), (14, "Moderate"),
+                    (19, "Moderately severe"), (27, "Severe")]
+    },
+    "GAD-7": {
+        "title": "Generalized Anxiety Disorder – 7",
+        "questions": [
+            "Feeling nervous, anxious or on edge",
+            "Not being able to stop or control worrying",
+            "Worrying too much about different things",
+            "Trouble relaxing",
+            "Being so restless that it is hard to sit still",
+            "Becoming easily annoyed or irritable",
+            "Feeling afraid as if something awful might happen",
+        ],
+        "cutoffs": [(4, "Minimal"), (9, "Mild"), (14, "Moderate"), (21, "Severe")]
+    }
+}
+
+SUICIDE_KEYWORDS = ["suicide", "kill myself", "end my life", "self harm", "kill someone", "kill", "harm", "destroy myself"]
+
+def is_crisis(message: str) -> bool:
+    return any(word in message.lower() for word in SUICIDE_KEYWORDS)
+
+def looks_distressed(text: str) -> bool:
+    """Simple keyword detector for low mood / anxiety cues."""
+    keywords = {"depress", "sad", "hopeless", "worthless",
+                "anxious", "anxiety", "panic", "suicid", "tired of life"}
+    t = text.lower()
+    return any(k in t for k in keywords)
+
+def chat(user_input, history):
+    """Send message + history to Gemini and return response text."""
+    print(f"Chat function called with input: '{user_input}' and history length: {len(history)}")
+    
+    if is_crisis(user_input):
+        return (
+            "⚠️ I hear that you're feeling really overwhelmed and thinking about suicide. "
+            "You're not alone, and your life is valuable. 🙏\n\n"
+            "Please talk to someone you trust right now. "
+            "In India, you can call **KIRAN Helpline at 1800-599-0019** (24/7, toll free). "
+            "If outside India, please reach out to your local crisis hotline immediately."
+            "If you want , I can arrange meeting with your college counsellor "
+        )
+    
+    context = SYSTEM_PROMPT
+    for u, b in history:
+        context += f"\nStudent: {u}\nAssistant: {b}"
+    context += f"\nStudent: {user_input}\nAssistant:"
+
+    try:
+        response = model.generate_content(context, generation_config=generation_config)
+        
+        # Check if response has content
+        if response.candidates and response.candidates[0].content.parts:
+            bot_reply = response.text.strip()
+            
+            # Add distress detection
+            if looks_distressed(user_input):
+                bot_reply += "\n\n💙 I notice you might be going through a tough time. Would you like to take a quick mental health screening? You can ask me about PHQ-9 for depression or GAD-7 for anxiety."
+            
+            return bot_reply
+            
+        else:
+            return "I'm here to support you with your mental health concerns. How can I help you today?"
+                
+    except Exception as e:
+        print(f"Error in chat function: {e}")
+        return "I'm having a technical moment! Could you try asking again? I'm here to support you! 🤖"
+
+def run_test_api(test_name, responses):
+    """Run PHQ-9 or GAD-7 test with provided responses and return results."""
+    test = tests[test_name]
+    
+    if len(responses) != len(test["questions"]):
+        return f"Error: Expected {len(test['questions'])} responses, got {len(responses)}"
+    
+    # Validate all responses are 0-3
+    for i, score in enumerate(responses):
+        if score not in [0, 1, 2, 3]:
+            return f"Error: Response {i+1} must be 0, 1, 2, or 3. Got {score}"
+    
+    total = sum(responses)
+    
+    # Determine severity level
+    severity = "Unknown"
+    for cutoff, level in test["cutoffs"]:
+        if total <= cutoff:
+            severity = level
+            break
+    
+    result = f"📊 Your {test_name} score: {total}/{27 if test_name == 'PHQ-9' else 21} ({severity})\n\n"
+    
+    if severity == "Minimal":
+        result += "✅ Great! You seem to be doing well."
+    elif severity in ["Mild", "Moderate"]:
+        result += "⚠️ Consider speaking with a counselor or trusted friend."
+    else:  # Severe
+        result += "🚨 Please reach out to a mental health professional soon."
+        
+    result += "\n\n⚠ Note: This tool is for awareness. Please seek help if you're in crisis."
+    
+    return result
+
+app = Flask(__name__)
+# Configure CORS properly for development
+CORS(app, origins=['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'], 
+     methods=['GET', 'POST', 'OPTIONS'], 
+     allow_headers=['Content-Type'])
+
+# Store conversation sessions with state management
+conversation_sessions = {}
+
+@app.route('/chat', methods=['POST', 'OPTIONS'])
+@cross_origin()
+def chat_api():
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        print("Handling OPTIONS preflight request")
+        return '', 200
+        
+    try:
+        print(f"Received request from: {request.remote_addr}")
+        
+        data = request.json
+        user_input = data.get('message', '').strip()
+        session_id = data.get('session_id', 'default')
+        
+        if not user_input:
+            return jsonify({'error': 'No message provided'}), 400
+        
+        # Initialize session if not exists
+        if session_id not in conversation_sessions:
+            conversation_sessions[session_id] = {
+                'history': [],
+                'offered_test': False,
+                'state': 'normal'  # normal, awaiting_test_choice, awaiting_test_responses
+            }
+        
+        session = conversation_sessions[session_id]
+        history = session['history']
+        
+        print(f"Session ID: {session_id}")
+        print(f"Current history length: {len(history)}")
+        print(f"User input: {user_input}")
+        print(f"Session state: {session['state']}")
+        
+        # Handle quit/exit commands (like gem3.py main function)
+        if user_input.lower() in ['quit', 'exit', 'bye']:
+            reply = "Take care! Remember, seeking help is a sign of strength. 💙"
+            return jsonify({'reply': reply})
+        
+        # Handle test command (like gem3.py main function)
+        if user_input.lower() == 'test':
+            session['state'] = 'awaiting_test_choice'
+            reply = ("Which test would you like to take?\n"
+                    "1. PHQ-9 (Depression)\n"
+                    "2. GAD-7 (Anxiety)\n"
+                    "Enter 1 or 2:")
+            return jsonify({'reply': reply})
+        
+        # Handle test selection (like gem3.py main function)
+        if session['state'] == 'awaiting_test_choice':
+            if user_input == "1":
+                session['state'] = 'normal'
+                test_info = ("📋 Patient Health Questionnaire – 9 (Depression)\n"
+                           "Over the last 2 weeks, how often have you been bothered by the following?\n"
+                           "0=Not at all | 1=Several days | 2=More than half the days | 3=Nearly every day\n\n"
+                           "Please respond with 9 numbers (0-3) separated by spaces for each question:\n\n"
+                           "1. Little interest or pleasure in doing things\n"
+                           "2. Feeling down, depressed, or hopeless\n"
+                           "3. Trouble falling or staying asleep, or sleeping too much\n"
+                           "4. Feeling tired or having little energy\n"
+                           "5. Poor appetite or overeating\n"
+                           "6. Feeling bad about yourself — or that you are a failure\n"
+                           "7. Trouble concentrating on things, such as reading or watching TV\n"
+                           "8. Moving/speaking slowly or being fidgety/restless\n"
+                           "9. Thoughts that you would be better off dead, or of hurting yourself\n\n"
+                           "Example: 1 2 3 0 1 2 1 0 3")
+                return jsonify({'reply': test_info})
+            elif user_input == "2":
+                session['state'] = 'normal'
+                test_info = ("📋 Generalized Anxiety Disorder – 7\n"
+                           "Over the last 2 weeks, how often have you been bothered by the following?\n"
+                           "0=Not at all | 1=Several days | 2=More than half the days | 3=Nearly every day\n\n"
+                           "Please respond with 7 numbers (0-3) separated by spaces for each question:\n\n"
+                           "1. Feeling nervous, anxious or on edge\n"
+                           "2. Not being able to stop or control worrying\n"
+                           "3. Worrying too much about different things\n"
+                           "4. Trouble relaxing\n"
+                           "5. Being so restless that it is hard to sit still\n"
+                           "6. Becoming easily annoyed or irritable\n"
+                           "7. Feeling afraid as if something awful might happen\n\n"
+                           "Example: 2 1 3 0 1 2 1")
+                return jsonify({'reply': test_info})
+            else:
+                session['state'] = 'normal'
+                reply = "Invalid choice. Type 'test' to try again."
+                return jsonify({'reply': reply})
+        
+        # Check if input looks like test responses
+        parts = user_input.split()
+        if len(parts) == 9 and all(p.isdigit() and int(p) in [0,1,2,3] for p in parts):
+            # PHQ-9 responses
+            responses = [int(p) for p in parts]
+            result = run_test_api("PHQ-9", responses)
+            session['history'].append((user_input, result))
+            return jsonify({'reply': result})
+        elif len(parts) == 7 and all(p.isdigit() and int(p) in [0,1,2,3] for p in parts):
+            # GAD-7 responses
+            responses = [int(p) for p in parts]
+            result = run_test_api("GAD-7", responses)
+            session['history'].append((user_input, result))
+            return jsonify({'reply': result})
+        
+        # Handle distress detection and test offering (like gem3.py main function)
+        if looks_distressed(user_input) and not session['offered_test']:
+            session['offered_test'] = True
+            reply = ("💙 I'm sorry you're feeling low. Would you like to take a quick questionnaire "
+                    "(PHQ-9 for mood / GAD-7 for anxiety) to check how you're doing? \n\n"
+                    "Type 'yes' to take a test, or continue the conversation normally.")
+            session['history'].append((user_input, reply))
+            return jsonify({'reply': reply})
+        
+        # Handle yes response after test offer
+        if session['offered_test'] and user_input.lower().startswith("y"):
+            session['offered_test'] = False
+            session['state'] = 'awaiting_test_choice'
+            reply = ("Great 🙂 Which one would you like?\n"
+                    "1. PHQ-9 (Depression)\n" 
+                    "2. GAD-7 (Anxiety)\n"
+                    "Enter 1 or 2:")
+            return jsonify({'reply': reply})
+        
+        # Normal chat flow (like gem3.py main function)
+        if not user_input:
+            return jsonify({'reply': "I'm here to listen. How can I help you today?"})
+            
+        # Get bot response using the same chat function as gem3.py
+        reply = chat(user_input, history)
+        
+        # Update conversation history
+        session['history'].append((user_input, reply))
+        
+        print(f"Bot reply length: {len(reply)}")
+        print(f"Updated history length: {len(session['history'])}")
+        print(f"Reply preview: {reply[:100]}...")
+        
+        response = jsonify({'reply': reply})
+        return response
+        
+    except Exception as e:
+        print(f"Error in chat_api: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/health', methods=['GET'])
+@cross_origin()
+def health_check():
+    return jsonify({'status': 'OK', 'message': 'Chat server is running'})
+
+if __name__ == '__main__':
+    print("🧠 Mental Health Support Chatbot Server")
+    print("Starting Flask chat server on http://127.0.0.1:5000")
+    print("Type 'test' for mental health screening, 'quit' to exit.\n")
+    app.run(host='0.0.0.0', port=5000, debug=True)

@@ -7,17 +7,12 @@ import { useTheme } from '../../contexts/ThemeContext';
 import AnimatedIcon from '../../components/AnimatedIcon';
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      type: 'bot',
-      content: "Hello! I'm Serene, your AI mental health companion. How are you feeling today?",
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sessionId, setSessionId] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
   const messagesEndRef = useRef(null);
 
@@ -25,13 +20,28 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Initialize messages and session ID on client side only
+  useEffect(() => {
+    // Set initial bot message
+    setMessages([{
+      id: 1,
+      type: 'bot',
+      content: "Hello! I'm Serene, your AI mental health companion. How are you feeling today?",
+      timestamp: new Date()
+    }]);
+    
+    // Generate session ID
+    setSessionId('session_' + Date.now());
+    setIsInitialized(true);
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
 
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
     const newMessage = {
@@ -42,31 +52,61 @@ export default function ChatPage() {
     };
 
     setMessages(prev => [...prev, newMessage]);
+    const currentMessage = inputMessage;
     setInputMessage('');
     setIsTyping(true);
 
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      const botReply = await getBotResponse(currentMessage);
       const botResponse = {
         id: messages.length + 2,
         type: 'bot',
-        content: getBotResponse(inputMessage),
+        content: botReply,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, botResponse]);
+    } catch (error) {
+      const errorResponse = {
+        id: messages.length + 2,
+        type: 'bot',
+        content: "I'm sorry, I'm having trouble responding right now. Please try again.",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorResponse]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
-  const getBotResponse = (message) => {
-    const responses = [
-      "I understand you&#39;re going through something difficult. Would you like to talk about what&#39;s been weighing on your mind?",
-      "Thank you for sharing that with me. It takes courage to open up. How has this been affecting your daily life?",
-      "That sounds really challenging. Remember, it&#39;s okay to feel this way. Have you tried any coping strategies that have helped before?",
-      "I hear you, and your feelings are completely valid. Would you like me to suggest some breathing exercises or grounding techniques?",
-      "It&#39;s important that you&#39;re reaching out. You&#39;re not alone in this. Would you like to explore some resources that might help?",
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
+  const getBotResponse = async (message) => {
+    try {
+      console.log('Sending message to API:', message);
+      console.log('Session ID:', sessionId);
+      
+      const response = await fetch('http://127.0.0.1:5000/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          message: message,
+          session_id: sessionId 
+        }),
+      });
+      
+      console.log('API response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API response data preview:', data.reply.substring(0, 100) + '...');
+      return data.reply;
+    } catch (error) {
+      console.error('Detailed error calling chat API:', error);
+      return "I'm sorry, I'm having trouble connecting to the server. Please try again.";
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -75,6 +115,24 @@ export default function ChatPage() {
       handleSendMessage();
     }
   };
+
+  // Show loading until initialized to prevent hydration mismatch
+  if (!isInitialized) {
+    return (
+      <div style={{ backgroundColor: "var(--color-background)", minHeight: "100vh" }}>
+        <Navbar />
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: 'calc(100vh - 64px)',
+          color: "var(--color-text-primary)"
+        }}>
+          <div>Loading chat...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: "var(--color-background)", minHeight: "100vh" }}>

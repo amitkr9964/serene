@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "../../../contexts/ThemeContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AnimatedIcon from '../../../components/AnimatedIcon';
@@ -10,6 +10,17 @@ export default function AdminLayout({ children }) {
   const { isDarkMode, toggleTheme } = useTheme();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState('');
+
+  // Set current date on client side only
+  useEffect(() => {
+    setCurrentDate(new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }));
+  }, []);
 
   const sidebarItems = [
     { 
@@ -327,12 +338,7 @@ export default function AdminLayout({ children }) {
           >
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
               <div style={{ fontSize: "0.9rem", color: "var(--color-text-secondary)" }}>
-                {new Date().toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
+                {currentDate}
               </div>
             </div>
             

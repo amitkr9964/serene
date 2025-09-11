@@ -24,6 +24,76 @@ export default function HeroSection() {
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const [isEmergencyActive, setIsEmergencyActive] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatLoading, setIsChatLoading] = useState(false);
+
+  const handleChatSend = async () => {
+    if (!chatInput.trim()) return;
+
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: chatInput,
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    const currentInput = chatInput;
+    setChatInput("");
+    setIsChatLoading(true);
+
+    try {
+      console.log('Sending message to API:', currentInput);
+      
+      const response = await fetch('http://127.0.0.1:5000/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: currentInput }),
+      });
+      
+      console.log('API response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API response data:', data);
+      
+      const botMessage = {
+        id: Date.now() + 1,
+        type: 'bot',
+        content: data.reply,
+        timestamp: new Date()
+      };
+      
+      setChatMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Detailed error calling chat API:', error);
+      
+      let errorMessage = "I'm sorry, I'm having trouble connecting right now.";
+      
+      // More specific error messages
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = "Unable to connect to the chat service. Please make sure the Flask server is running on http://127.0.0.1:5000";
+      } else if (error.message.includes('HTTP error')) {
+        errorMessage = `Server error: ${error.message}. Please check the Flask server logs.`;
+      }
+      
+      const errorResponse = {
+        id: Date.now() + 1,
+        type: 'bot',
+        content: errorMessage,
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, errorResponse]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
 
   const handleEmergencyClick = () => {
     setIsEmergencyActive(true);
@@ -74,7 +144,7 @@ export default function HeroSection() {
           zIndex: 0,
         }}
       />
-
+  
       <div
         className="max-w-7xl mx-auto flex flex-col gap-8"
         style={{ position: "relative", zIndex: 1 }}
@@ -255,8 +325,14 @@ export default function HeroSection() {
                 <input
                   type="text"
                   placeholder="Ask anything about mental health, stress, anxiety, or type / for shortcuts..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleChatSend();
+                    }
+                  }}
                   style={{
                     flex: 1,
                     border: "none",
@@ -298,19 +374,104 @@ export default function HeroSection() {
                     <AnimatedIcon name="mic" size={18} />
                   </button>
                   <button
+                    onClick={handleChatSend}
+                    disabled={!chatInput.trim() || isChatLoading}
                     style={{
                       backgroundColor: "var(--color-primary)",
                       border: "none",
                       borderRadius: "var(--radius-md)",
                       padding: "0.75rem",
-                      cursor: "pointer",
+                      cursor: chatInput.trim() && !isChatLoading ? "pointer" : "not-allowed",
                       color: "white",
+                      opacity: chatInput.trim() && !isChatLoading ? 1 : 0.5,
                     }}
                   >
-                    <AnimatedIcon name="send" size={16} color="white" />
+                    {isChatLoading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <AnimatedIcon name="send" size={16} color="white" />
+                    )}
                   </button>
                 </div>
               </div>
+
+              {/* Chat Messages Area */}
+              {chatMessages.length > 0 && (
+                <div
+                  style={{
+                    marginTop: "1rem",
+                    padding: "1rem",
+                    backgroundColor: "var(--color-surface)",
+                    borderRadius: "var(--radius-lg)",
+                    border: "1px solid var(--color-border)",
+                    maxHeight: "300px",
+                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem",
+                  }}
+                >
+                  {chatMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      style={{
+                        display: "flex",
+                        justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start',
+                      }}
+                    >
+                      <div
+                        style={{
+                          maxWidth: "80%",
+                          padding: "0.5rem 0.75rem",
+                          borderRadius: "var(--radius-md)",
+                          backgroundColor: message.type === 'user' 
+                            ? "var(--color-primary)" 
+                            : "var(--color-surface-alt)",
+                          color: message.type === 'user' 
+                            ? "white" 
+                            : "var(--color-text-primary)",
+                          fontSize: "0.9rem",
+                          lineHeight: "1.4",
+                        }}
+                      >
+                        <div>{message.content}</div>
+                        <div
+                          style={{
+                            fontSize: "0.75rem",
+                            opacity: 0.7,
+                            marginTop: "0.25rem",
+                            textAlign: message.type === 'user' ? 'right' : 'left',
+                          }}
+                        >
+                          {message.timestamp.toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {isChatLoading && (
+                    <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                      <div
+                        style={{
+                          padding: "0.5rem 0.75rem",
+                          borderRadius: "var(--radius-md)",
+                          backgroundColor: "var(--color-surface-alt)",
+                          color: "var(--color-text-primary)",
+                        }}
+                      >
+                        <div style={{ display: "flex", gap: "0.25rem", alignItems: "center" }}>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

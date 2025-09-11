@@ -14,6 +14,7 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     // Check localStorage for saved theme preference
@@ -23,6 +24,7 @@ export const ThemeProvider = ({ children }) => {
     const shouldBeDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
     
     setIsDarkMode(shouldBeDark);
+    setIsInitialized(true);
     
     if (shouldBeDark) {
       document.documentElement.setAttribute('data-theme', 'dark');
@@ -45,7 +47,7 @@ export const ThemeProvider = ({ children }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ isDarkMode, toggleTheme, isInitialized }}>
       {children}
     </ThemeContext.Provider>
   );
