@@ -11,7 +11,6 @@ export default function CulturalContextPage() {
   const religions = [
     { id: 'all', name: 'All Faiths', icon: '🌍', color: 'var(--color-primary)' },
     { id: 'christianity', name: 'Christianity', icon: '✝️', color: 'var(--color-secondary)' },
-    { id: 'islam', name: 'Islam', icon: '☪️', color: 'var(--color-accent)' },
     { id: 'hinduism', name: 'Hinduism', icon: '🕉️', color: 'var(--color-warning)' },
     { id: 'buddhism', name: 'Buddhism', icon: '☸️', color: 'var(--color-success)' },
     { id: 'judaism', name: 'Judaism', icon: '✡️', color: 'var(--color-error)' },
