@@ -144,7 +144,7 @@ export default function AboutPage() {
                 >
                   Our platform combines cutting-edge AI technology with human expertise to provide 
                   24/7 support, crisis intervention, and personalized resources tailored to each 
-                  student's unique needs and cultural background.
+                  student&#39;s unique needs and cultural background.
                 </p>
               </div>
               <div
@@ -405,7 +405,7 @@ export default function AboutPage() {
                 margin: "0 auto 2rem auto",
               }}
             >
-              We're always happy to discuss partnerships, answer questions, or 
+              We&#39;re always happy to discuss partnerships, answer questions, or 
               provide more information about our services.
             </p>
             <a

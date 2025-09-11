@@ -55,7 +55,7 @@ export default function Navbar() {
                   color: "var(--color-text-primary)",
                 }}
               >
-                <a href="/" style={{ color: "inherit", textDecoration: "none" }}>Serene</a>
+                <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>Serene</Link>
               </span>
             </div>
           </div>

@@ -27,7 +27,7 @@ export default function PeerSupportPage() {
     {
       id: 1,
       title: "Dealing with exam anxiety - tips that actually work?",
-      content: "I've been struggling with severe anxiety before exams. My heart races and I can't focus. Has anyone found techniques that really help?",
+      content: "I&#39;ve been struggling with severe anxiety before exams. My heart races and I can&#39;t focus. Has anyone found techniques that really help?",
       author: "Anonymous Student #4729",
       course: "Psychology",
       timestamp: "2 hours ago",
@@ -69,7 +69,7 @@ export default function PeerSupportPage() {
     {
       id: 4,
       title: "Imposter syndrome in competitive program",
-      content: "Sometimes I feel like I don't belong here. Everyone seems so much smarter. Does this feeling ever go away?",
+      content: "Sometimes I feel like I don&#39;t belong here. Everyone seems so much smarter. Does this feeling ever go away?",
       author: "Anonymous Student #3421",
       course: "Medicine",
       timestamp: "2 days ago",
@@ -629,7 +629,7 @@ export default function PeerSupportPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="What's on your mind?"
+                  placeholder="What&#39;s on your mind?"
                   style={{
                     width: "100%",
                     padding: "0.75rem",

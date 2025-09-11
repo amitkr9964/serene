@@ -431,7 +431,7 @@ export default function BookingPage() {
 
               <div className="space-y-3">
                 <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                  You'll receive a reminder 15 minutes before your session. 
+                  You&#39;ll receive a reminder 15 minutes before your session. 
                   The session link will be available in your dashboard.
                 </p>
                 

@@ -99,7 +99,7 @@ export default function CounsellorDashboard() {
   ];
 
   const stats = [
-    { label: "Today's Sessions", value: "4", icon: "📅", color: "var(--color-primary)" },
+    { label: "Today&#39;s Sessions", value: "4", icon: "📅", color: "var(--color-primary)" },
     { label: "This Week", value: "18", icon: "📊", color: "var(--color-success)" },
     { label: "Completion Rate", value: "96%", icon: "✅", color: "var(--color-accent)" },
     { label: "Avg Rating", value: "4.8", icon: "⭐", color: "var(--color-warning)" },
@@ -305,7 +305,7 @@ export default function CounsellorDashboard() {
             </div>
           </div>
 
-          {/* Today's Schedule */}
+          {/* Today&#39;s Schedule */}
           <div
             style={{
               backgroundColor: "var(--color-surface)",
@@ -322,7 +322,7 @@ export default function CounsellorDashboard() {
                 marginBottom: "1.5rem",
               }}
             >
-              🕒 Today's Schedule (4PM - 12AM)
+              🕒 Today&#39;s Schedule (4PM - 12AM)
             </h2>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">

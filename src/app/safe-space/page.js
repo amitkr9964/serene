@@ -294,7 +294,7 @@ export default function SafeSpacePage() {
               >
                 <h2 className="text-lg font-semibold mb-2">Welcome Back! <AnimatedIcon name="star" size={18} /></h2>
                 <p style={{ color: "var(--color-text-secondary)" }}>
-                  Here's your wellness summary for today. You're doing great!
+                  Here&#39;s your wellness summary for today. You&#39;re doing great!
                 </p>
               </div>
 
@@ -354,7 +354,7 @@ export default function SafeSpacePage() {
                 </div>
 
                 <div className="p-6 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-                  <h3 className="font-semibold mb-4">Today's Mood</h3>
+                  <h3 className="font-semibold mb-4">Today&#39;s Mood</h3>
                   <div className="flex justify-center space-x-3 mb-4">
                     {["😢", "😟", "😐", "🙂", "😊"].map((emoji, index) => (
                       <button
@@ -383,7 +383,7 @@ export default function SafeSpacePage() {
                 <textarea
                   value={journalEntry}
                   onChange={(e) => setJournalEntry(e.target.value)}
-                  placeholder="What's on your mind today? How are you feeling?"
+                  placeholder="What&#39;s on your mind today? How are you feeling?"
                   className="w-full h-32 p-3 rounded-md resize-none"
                   style={{
                     backgroundColor: "var(--color-surface-alt)",

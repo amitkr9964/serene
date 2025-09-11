@@ -71,7 +71,7 @@ export default function ContactPage() {
                 lineHeight: "1.6",
               }}
             >
-              We're here to help. Reach out to us for support, questions, or feedback about our mental health services.
+              We&#39;re here to help. Reach out to us for support, questions, or feedback about our mental health services.
             </p>
           </div>
 
@@ -358,7 +358,7 @@ export default function ContactPage() {
                 lineHeight: "1.5",
               }}
             >
-              If you're experiencing a mental health crisis or having thoughts of self-harm, 
+              If you&#39;re experiencing a mental health crisis or having thoughts of self-harm, 
               please contact emergency services immediately at <strong>911</strong> or call our 
               crisis hotline at <strong>+1 (555) 911-HELP</strong>.
             </p>

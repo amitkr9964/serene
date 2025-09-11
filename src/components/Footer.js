@@ -57,72 +57,10 @@ export default function Footer() {
               }}
             >
               Your AI-powered mental health companion. Providing 24/7 support,
-              resources, and guidance for college students' mental wellness
+              resources, and guidance for college students&#39; mental wellness
               journey.
             </p>
-            <div className="flex space-x-3 mt-4">
-              <a
-                href="#"
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  backgroundColor: "var(--color-primary)",
-                  borderRadius: "var(--radius-md)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textDecoration: "none",
-                  transition: "background-color 0.2s ease",
-                }}
-              >
-                <span style={{ color: "white", fontSize: "1.1rem" }}>📧</span>
-              </a>
-              <a
-                href="#"
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  backgroundColor: "var(--color-primary)",
-                  borderRadius: "var(--radius-md)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textDecoration: "none",
-                  transition: "background-color 0.2s ease",
-                }}
-                onMouseEnter={(e) =>
-                  (e.target.style.backgroundColor = "var(--color-primary-dark)")
-                }
-                onMouseLeave={(e) =>
-                  (e.target.style.backgroundColor = "var(--color-primary)")
-                }
-              >
-                <span style={{ color: "white", fontSize: "1.1rem" }}>🐦</span>
-              </a>
-              <a
-                href="#"
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  backgroundColor: "var(--color-primary)",
-                  borderRadius: "var(--radius-md)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textDecoration: "none",
-                  transition: "background-color 0.2s ease",
-                }}
-                onMouseEnter={(e) =>
-                  (e.target.style.backgroundColor = "var(--color-primary-dark)")
-                }
-                onMouseLeave={(e) =>
-                  (e.target.style.backgroundColor = "var(--color-primary)")
-                }
-              >
-                <span style={{ color: "white", fontSize: "1.1rem" }}>💼</span>
-              </a>
-            </div>
-          </div>
+ </div>
 
           {/* Quick Links */}
           <div>

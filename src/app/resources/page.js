@@ -133,7 +133,7 @@ export default function ResourcesPage() {
       thumbnail: "📱",
       category: "Digital Wellness",
       citations: 127,
-      description: "Comprehensive study on social media's effects on university students' psychological well-being.",
+      description: "Comprehensive study on social media&#39;s effects on university students&#39; psychological well-being.",
     },
     {
       id: 2,
@@ -499,7 +499,7 @@ export default function ResourcesPage() {
                 marginBottom: "1rem",
               }}
             >
-              Can't find what you're looking for?
+              Can&#39;t find what you&#39;re looking for?
             </h3>
             <p
               style={{

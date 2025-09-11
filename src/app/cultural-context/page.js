@@ -478,13 +478,13 @@ export default function CulturalContextPage() {
                   </div>
 
                   <h3
-                    style={{
-                      fontSize: "1.1rem",
-                      fontWeight: "600",
-                      color: "var(--color-text-primary)",
-                      marginBottom: "0.75rem",
-                      lineHeight: "1.3",
-                    }}
+                  style={{
+                    fontSize: "1.1rem",
+                    fontWeight: "600",
+                    color: "var(--color-text-primary)",
+                    marginBottom: "0.75rem",
+                    lineHeight: "1.3",
+                  }}
                   >
                     {resource.title}
                   </h3>
@@ -662,7 +662,7 @@ export default function CulturalContextPage() {
                 marginBottom: "1rem",
               }}
             >
-              Don't see your faith or culture represented?
+              Don&#39;t see your faith or culture represented?
             </h3>
             <p
               style={{
@@ -672,7 +672,7 @@ export default function CulturalContextPage() {
                 margin: "0 auto 2rem auto",
               }}
             >
-              We're continuously expanding our cultural resources. Request specific content 
+              We&#39;re continuously expanding our cultural resources. Request specific content 
               for your faith tradition or cultural background.
             </p>
             <button

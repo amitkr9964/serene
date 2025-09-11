@@ -60,11 +60,11 @@ export default function ChatPage() {
 
   const getBotResponse = (message) => {
     const responses = [
-      "I understand you're going through something difficult. Would you like to talk about what's been weighing on your mind?",
+      "I understand you&#39;re going through something difficult. Would you like to talk about what&#39;s been weighing on your mind?",
       "Thank you for sharing that with me. It takes courage to open up. How has this been affecting your daily life?",
-      "That sounds really challenging. Remember, it's okay to feel this way. Have you tried any coping strategies that have helped before?",
+      "That sounds really challenging. Remember, it&#39;s okay to feel this way. Have you tried any coping strategies that have helped before?",
       "I hear you, and your feelings are completely valid. Would you like me to suggest some breathing exercises or grounding techniques?",
-      "It's important that you're reaching out. You're not alone in this. Would you like to explore some resources that might help?",
+      "It&#39;s important that you&#39;re reaching out. You&#39;re not alone in this. Would you like to explore some resources that might help?",
     ];
     return responses[Math.floor(Math.random() * responses.length)];
   };
