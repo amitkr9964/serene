@@ -3,6 +3,7 @@
 import Navbar from "../../components/Navbar";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useState } from "react";
+import Image from "next/image";
 
 export default function CulturalContextPage() {
   const { theme } = useTheme();
@@ -420,9 +421,11 @@ export default function CulturalContextPage() {
                     overflow: "hidden",
                   }}
                 >
-                  <img
+                  <Image
                     src={resource.thumbnail}
                     alt={resource.title}
+                    width={400}
+                    height={140}
                     style={{
                       width: "100%",
                       height: "100%",
