@@ -64,7 +64,7 @@ export default function Navbar() {
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
               <a
-                href="/home"
+                href="/"
                 style={{
                   color: "var(--color-text-primary)",
                   textDecoration: "none",
@@ -239,7 +239,7 @@ export default function Navbar() {
             >
               <div className="flex flex-col space-y-4">
                 <a
-                  href="#home"
+                  href="/"
                   style={{
                     color: "var(--color-text-primary)",
                     textDecoration: "none",
