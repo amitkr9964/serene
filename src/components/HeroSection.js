@@ -176,7 +176,7 @@ export default function HeroSection() {
               marginBottom: "0.5rem",
             }}
           >
-            Welcome to Serene 
+            Welcome to Serene 🍃
           </h1>
           <p
             className="mx-auto"
