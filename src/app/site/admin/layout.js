@@ -82,7 +82,14 @@ export default function AdminLayout({ children }) {
   };
 
   return (
-    <div style={{ backgroundColor: "var(--color-background)", minHeight: "100vh" }}>
+    <>
+      <style jsx>{`
+        .admin-sidebar-link:not(.active):hover {
+          background-color: var(--color-background) !important;
+          border-color: var(--color-border) !important;
+        }
+      `}</style>
+      <div style={{ backgroundColor: "var(--color-background)", minHeight: "100vh" }}>
       {/* Mobile menu button */}
       <div className="lg:hidden" style={{ position: "fixed", top: "1rem", left: "1rem", zIndex: 50 }}>
         <button
@@ -150,6 +157,7 @@ export default function AdminLayout({ children }) {
               <Link
                 key={item.id}
                 href={item.path}
+                className={`admin-sidebar-link ${isCurrentPage(item.path) ? 'active' : ''}`}
                 style={{
                   display: "block",
                   padding: "1rem",
@@ -165,18 +173,6 @@ export default function AdminLayout({ children }) {
                   border: isCurrentPage(item.path)
                     ? "none"
                     : "1px solid transparent",
-                }}
-                onMouseOver={(e) => {
-                  if (!isCurrentPage(item.path)) {
-                    e.target.style.backgroundColor = "var(--color-background)";
-                    e.target.style.borderColor = "var(--color-border)";
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (!isCurrentPage(item.path)) {
-                    e.target.style.backgroundColor = "transparent";
-                    e.target.style.borderColor = "transparent";
-                  }
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}>
@@ -389,5 +385,6 @@ export default function AdminLayout({ children }) {
         </div>
       </div>
     </div>
+    </>
   );
 }

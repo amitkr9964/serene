@@ -17,7 +17,7 @@ export default function CounsellorLayout({ children, params }) {
     { id: 'dashboard', label: 'Dashboard Overview', icon: '🏠', path: '' },
     { id: 'appointments', label: 'Appointment Management', icon: 'calendar', path: '/appointments' },
     { id: 'sessions', label: 'Video Sessions', icon: '🎥', path: '/sessions' },
-    { id: 'profile', label: 'Profile Settings', icon: '⚙️', path: '/profile' },
+    // { id: 'profile', label: 'Profile Settings', icon: '⚙️', path: '/profile' },
   ];
 
   return (

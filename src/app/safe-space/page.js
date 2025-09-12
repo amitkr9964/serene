@@ -49,6 +49,40 @@ export default function SafeSpacePage() {
     { date: '2025-09-11', mood: 4 }
   ]);
 
+  // Addiction Tracker state
+  const [addictions, setAddictions] = useState([
+    { id: 1, name: 'Social Media', type: 'digital', dailyGoal: 120, currentUsage: 85, lastChecked: '10:30 AM' },
+    { id: 2, name: 'Caffeine', type: 'substance', dailyGoal: 2, currentUsage: 1, unit: 'cups', lastChecked: '9:15 AM' },
+    { id: 3, name: 'Gaming', type: 'digital', dailyGoal: 60, currentUsage: 45, lastChecked: '8:20 PM' }
+  ]);
+
+  const [newAddiction, setNewAddiction] = useState({ name: '', type: 'digital', dailyGoal: '' });
+
+  // Stress Monitor state
+  const [stressData, setStressData] = useState({
+    currentLevel: 3,
+    heartRate: 72,
+    hrvScore: 45,
+    sleepQuality: 8.5,
+    lastSync: 'Just now',
+    weeklyAverage: 2.8,
+    trends: [
+      { time: '6:00', stress: 2, hr: 65 },
+      { time: '9:00', stress: 4, hr: 78 },
+      { time: '12:00', stress: 3, hr: 74 },
+      { time: '15:00', stress: 5, hr: 82 },
+      { time: '18:00', stress: 2, hr: 68 },
+      { time: '21:00', stress: 1, hr: 62 }
+    ]
+  });
+
+  const [connectedDevice, setConnectedDevice] = useState({
+    name: 'Apple Watch Series 9',
+    connected: true,
+    battery: 78,
+    lastSync: '2 minutes ago'
+  });
+
 
 
   const addJournalEntry = () => {
@@ -88,15 +122,49 @@ export default function SafeSpacePage() {
     ));
   };
 
+  const addAddiction = () => {
+    if (!newAddiction.name.trim() || !newAddiction.dailyGoal) return;
+    
+    const addiction = {
+      id: Date.now(),
+      name: newAddiction.name,
+      type: newAddiction.type,
+      dailyGoal: parseInt(newAddiction.dailyGoal),
+      currentUsage: 0,
+      unit: newAddiction.type === 'digital' ? 'minutes' : 'units',
+      lastChecked: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    
+    setAddictions([...addictions, addiction]);
+    setNewAddiction({ name: '', type: 'digital', dailyGoal: '' });
+  };
+
+  const updateAddictionUsage = (id, usage) => {
+    setAddictions(addictions.map(addiction => 
+      addiction.id === id 
+        ? { ...addiction, currentUsage: Math.max(0, usage), lastChecked: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+        : addiction
+    ));
+  };
+
+  const getStressLevel = (level) => {
+    if (level <= 2) return { label: 'Low', color: 'var(--color-success)', emoji: '😌' };
+    if (level <= 3) return { label: 'Moderate', color: 'var(--color-warning)', emoji: '😐' };
+    if (level <= 4) return { label: 'High', color: 'var(--color-error)', emoji: '😰' };
+    return { label: 'Very High', color: 'var(--color-error)', emoji: '😫' };
+  };
+
   const sidebarItems = [
     { id: 'overview', icon: 'chart', label: 'Overview' },
     { id: 'journal', icon: 'book', label: 'My Journal' },
     { id: 'chat-history', icon: 'message', label: 'Chat Sessions' },
+    { id: 'addiction-tracker', icon: 'shield', label: 'Addiction Tracker' },
+    { id: 'stress-monitor', icon: 'activity', label: 'Stress Monitor' },
     { id: 'resources', icon: 'book', label: 'Saved Resources' },
     { id: 'planner', icon: 'calendar', label: 'Study Planner' },
     { id: 'mood-tracker', icon: 'heart', label: 'Mood Tracker' },
     { id: 'goals', icon: 'star', label: 'Goals & Habits' },
-    { id: 'breathing', icon: 'activity', label: 'Breathing Space' },
+    { id: 'breathing', icon: 'wind', label: 'Breathing Space' },
     { id: 'achievements', icon: 'star', label: 'Achievements' }
   ];
 
@@ -123,20 +191,7 @@ export default function SafeSpacePage() {
           {/* Logo */}
           <div className="flex items-center p-4" style={{ borderBottom: "1px solid var(--color-border)" }}>
             <div className="flex items-center">
-              {/* <div
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  backgroundColor: "var(--color-primary)",
-                  borderRadius: "var(--radius-md)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: "0.75rem",
-                }}
-              >
-                <span className="text-white text-lg font-bold">🏠</span>
-              </div> */}
+
               <span className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>
                 My Safe Space
               </span>
@@ -149,30 +204,22 @@ export default function SafeSpacePage() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center w-full px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                   activeTab === item.id
-                    ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200'
-                    : ''
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md'
+                    : 'hover:bg-gradient-to-r hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-800 dark:hover:to-purple-700 hover:text-purple-700 dark:hover:text-purple-200'
                 }`}
-                style={{ color: activeTab === item.id ? "var(--color-accent)" : "var(--color-text-primary)" }}
-                onMouseOver={(e) => {
-                  if (activeTab !== item.id) {
-                    e.target.style.backgroundColor = "var(--color-primary)";
-                    e.target.style.color = "white";
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (activeTab !== item.id) {
-                    e.target.style.backgroundColor = "transparent";
-                    e.target.style.color = "var(--color-text-primary)";
-                  }
+                style={{ 
+                  color: activeTab === item.id ? "white" : "var(--color-text-primary)",
+                  backgroundColor: activeTab === item.id ? "" : "transparent"
                 }}
               >
                 <AnimatedIcon 
                   type={item.icon} 
                   size={16} 
                   className="mr-3"
-                  animate={true}
+                  animate={activeTab === item.id}
+                  style={{ color: activeTab === item.id ? "white" : "inherit" }}
                 />
                 {item.label}
               </button>
@@ -183,15 +230,8 @@ export default function SafeSpacePage() {
           <div className="p-4" style={{ borderTop: "1px solid var(--color-border)" }}>
             <Link href="/">
               <button 
-                className="flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors"
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = "var(--color-primary)";
-                  e.target.style.color = "white";
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = "transparent";
-                  e.target.style.color = "inherit";
-                }}
+                className="flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 hover:bg-gradient-to-r hover:from-green-100 hover:to-green-200 dark:hover:from-green-800 dark:hover:to-green-700 hover:text-green-700 dark:hover:text-green-200"
+                style={{ color: "var(--color-text-primary)" }}
               >
                 <AnimatedIcon name="home" size={16} className="mr-3" />
                 Back to Home
@@ -541,6 +581,302 @@ export default function SafeSpacePage() {
                     </Link>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Addiction Tracker Tab */}
+          {activeTab === 'addiction-tracker' && (
+            <div className="space-y-6">
+              {/* Add New Addiction */}
+              <div className="p-6 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <h3 className="font-semibold mb-4 flex items-center">
+                  <AnimatedIcon name="shield" size={20} className="mr-2" />
+                  Track New Habit/Addiction
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <input
+                    type="text"
+                    value={newAddiction.name}
+                    onChange={(e) => setNewAddiction({...newAddiction, name: e.target.value})}
+                    placeholder="Habit name (e.g., Social Media)"
+                    className="p-3 rounded-md"
+                    style={{
+                      backgroundColor: "var(--color-surface-alt)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text-primary)"
+                    }}
+                  />
+                  <select
+                    value={newAddiction.type}
+                    onChange={(e) => setNewAddiction({...newAddiction, type: e.target.value})}
+                    className="p-3 rounded-md"
+                    style={{
+                      backgroundColor: "var(--color-surface-alt)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text-primary)"
+                    }}
+                  >
+                    <option value="digital">Digital/Screen Time</option>
+                    <option value="substance">Substance (Coffee, etc.)</option>
+                    <option value="behavioral">Behavioral Habit</option>
+                  </select>
+                  <input
+                    type="number"
+                    value={newAddiction.dailyGoal}
+                    onChange={(e) => setNewAddiction({...newAddiction, dailyGoal: e.target.value})}
+                    placeholder="Daily limit"
+                    className="p-3 rounded-md"
+                    style={{
+                      backgroundColor: "var(--color-surface-alt)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text-primary)"
+                    }}
+                  />
+                  <button
+                    onClick={addAddiction}
+                    className="px-6 py-3 rounded-md text-white font-medium flex items-center justify-center"
+                    style={{ backgroundColor: "var(--color-primary)" }}
+                  >
+                    <AnimatedIcon name="plus" size={16} className="mr-2" />
+                    Add Tracker
+                  </button>
+                </div>
+              </div>
+
+              {/* Current Addictions/Habits */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {addictions.map((addiction) => {
+                  const progress = (addiction.currentUsage / addiction.dailyGoal) * 100;
+                  const isOverLimit = addiction.currentUsage > addiction.dailyGoal;
+                  
+                  return (
+                    <div 
+                      key={addiction.id}
+                      className="p-4 rounded-lg"
+                      style={{ 
+                        backgroundColor: "var(--color-surface)", 
+                        border: `1px solid ${isOverLimit ? 'var(--color-error)' : 'var(--color-border)'}` 
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium">{addiction.name}</h4>
+                        <span 
+                          className="px-2 py-1 text-xs rounded-full"
+                          style={{ 
+                            backgroundColor: addiction.type === 'digital' ? 'rgba(59, 130, 246, 0.1)' : 
+                                           addiction.type === 'substance' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(139, 92, 246, 0.1)',
+                            color: addiction.type === 'digital' ? 'var(--color-primary)' : 
+                                   addiction.type === 'substance' ? 'var(--color-success)' : 'var(--color-secondary)'
+                          }}
+                        >
+                          {addiction.type}
+                        </span>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Usage Today</span>
+                          <span style={{ color: isOverLimit ? 'var(--color-error)' : 'var(--color-text-primary)' }}>
+                            {addiction.currentUsage}/{addiction.dailyGoal} {addiction.unit || 'units'}
+                          </span>
+                        </div>
+                        <div 
+                          className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2"
+                        >
+                          <div 
+                            className="h-2 rounded-full transition-all duration-300"
+                            style={{ 
+                              width: `${Math.min(progress, 100)}%`,
+                              backgroundColor: isOverLimit ? 'var(--color-error)' : 
+                                             progress > 80 ? 'var(--color-warning)' : 'var(--color-success)'
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => updateAddictionUsage(addiction.id, addiction.currentUsage - 1)}
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                            style={{ backgroundColor: 'var(--color-success)' }}
+                          >
+                            -
+                          </button>
+                          <button
+                            onClick={() => updateAddictionUsage(addiction.id, addiction.currentUsage + 1)}
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                            style={{ backgroundColor: 'var(--color-error)' }}
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                          Last: {addiction.lastChecked}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Daily Summary */}
+              <div className="p-6 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <h3 className="font-semibold mb-4">Daily Summary</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold" style={{ color: 'var(--color-success)' }}>
+                      {addictions.filter(a => a.currentUsage <= a.dailyGoal).length}
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Goals Met</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold" style={{ color: 'var(--color-error)' }}>
+                      {addictions.filter(a => a.currentUsage > a.dailyGoal).length}
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Over Limit</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
+                      {Math.round((addictions.filter(a => a.currentUsage <= a.dailyGoal).length / addictions.length) * 100)}%
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Success Rate</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stress Monitor Tab */}
+          {activeTab === 'stress-monitor' && (
+            <div className="space-y-6">
+              {/* Device Connection Status */}
+              <div className="p-6 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <h3 className="font-semibold mb-4 flex items-center">
+                  <AnimatedIcon name="watch" size={20} className="mr-2" />
+                  Connected Device
+                </h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div 
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: connectedDevice.connected ? 'var(--color-success)' : 'var(--color-error)' }}
+                    />
+                    <div>
+                      <p className="font-medium">{connectedDevice.name}</p>
+                      <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                        Battery: {connectedDevice.battery}% • Last sync: {connectedDevice.lastSync}
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    className="px-4 py-2 rounded-md text-white"
+                    style={{ backgroundColor: 'var(--color-primary)' }}
+                  >
+                    Sync Now
+                  </button>
+                </div>
+              </div>
+
+              {/* Current Stress Level */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                  <div className="text-center">
+                    <div className="text-3xl mb-2">{getStressLevel(stressData.currentLevel).emoji}</div>
+                    <div className="text-2xl font-bold" style={{ color: getStressLevel(stressData.currentLevel).color }}>
+                      {stressData.currentLevel}/5
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Current Stress</p>
+                    <p className="text-xs font-medium" style={{ color: getStressLevel(stressData.currentLevel).color }}>
+                      {getStressLevel(stressData.currentLevel).label}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                  <div className="text-center">
+                    <AnimatedIcon name="heart" size={24} className="mb-2 block mx-auto" color="var(--color-error)" />
+                    <div className="text-2xl font-bold" style={{ color: 'var(--color-error)' }}>
+                      {stressData.heartRate}
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Heart Rate (BPM)</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                  <div className="text-center">
+                    <AnimatedIcon name="activity" size={24} className="mb-2 block mx-auto" color="var(--color-warning)" />
+                    <div className="text-2xl font-bold" style={{ color: 'var(--color-warning)' }}>
+                      {stressData.hrvScore}
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>HRV Score</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                  <div className="text-center">
+                    <div className="text-3xl mb-2">😴</div>
+                    <div className="text-2xl font-bold" style={{ color: 'var(--color-success)' }}>
+                      {stressData.sleepQuality}h
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Sleep Quality</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stress Trends */}
+              <div className="p-6 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <h3 className="font-semibold mb-4">Today's Stress Pattern</h3>
+                <div className="space-y-3">
+                  {stressData.trends.map((trend, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-md" style={{ backgroundColor: "var(--color-surface-alt)" }}>
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm font-medium w-12">{trend.time}</span>
+                        <div className="flex items-center space-x-2">
+                          <span>{getStressLevel(trend.stress).emoji}</span>
+                          <span className="text-sm">Stress: {trend.stress}/5</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <AnimatedIcon name="heart" size={14} color="var(--color-error)" />
+                        <span className="text-sm">{trend.hr} BPM</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              <div className="p-6 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+                <h3 className="font-semibold mb-4">Personalized Recommendations</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-md" style={{ backgroundColor: "rgba(16, 185, 129, 0.1)", border: "1px solid var(--color-success)" }}>
+                    <div className="flex items-center mb-2">
+                      <span className="text-lg mr-2">🧘</span>
+                      <h4 className="font-medium">Breathing Exercise</h4>
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                      Your stress level is moderate. Try a 5-minute breathing exercise.
+                    </p>
+                    <button className="mt-2 text-sm px-3 py-1 rounded-md" style={{ backgroundColor: 'var(--color-success)', color: 'white' }}>
+                      Start Now
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-md" style={{ backgroundColor: "rgba(59, 130, 246, 0.1)", border: "1px solid var(--color-primary)" }}>
+                    <div className="flex items-center mb-2">
+                      <span className="text-lg mr-2">💧</span>
+                      <h4 className="font-medium">Stay Hydrated</h4>
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                      Drink a glass of water to help reduce stress and improve focus.
+                    </p>
+                    <button className="mt-2 text-sm px-3 py-1 rounded-md" style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}>
+                      Set Reminder
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

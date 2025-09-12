@@ -87,7 +87,13 @@ export default function PeerSupportPage() {
     : posts.filter(post => post.course.toLowerCase().includes(selectedCourse));
 
   return (
-    <div style={{ backgroundColor: "var(--color-background)", minHeight: "100vh" }}>
+    <>
+      <style jsx>{`
+        .peer-support-button:not(.active):hover {
+          background-color: var(--color-border) !important;
+        }
+      `}</style>
+      <div style={{ backgroundColor: "var(--color-background)", minHeight: "100vh" }}>
       <Navbar />
       <div className="pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -160,6 +166,7 @@ export default function PeerSupportPage() {
                     <button
                       key={course.id}
                       onClick={() => setSelectedCourse(course.id)}
+                      className={`peer-support-button ${selectedCourse === course.id ? 'active' : ''}`}
                       style={{
                         width: "100%",
                         padding: "0.75rem",
@@ -170,16 +177,6 @@ export default function PeerSupportPage() {
                         borderRadius: "var(--radius-md)",
                         cursor: "pointer",
                         transition: "all 0.2s ease",
-                      }}
-                      onMouseOver={(e) => {
-                        if (selectedCourse !== course.id) {
-                          e.target.style.backgroundColor = "var(--color-border)";
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (selectedCourse !== course.id) {
-                          e.target.style.backgroundColor = "transparent";
-                        }
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -698,5 +695,6 @@ export default function PeerSupportPage() {
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -144,7 +144,7 @@ export default function HeroSection() {
           zIndex: 0,
         }}
       />
-  
+
       <div
         className="max-w-7xl mx-auto flex flex-col gap-8"
         style={{ position: "relative", zIndex: 1 }}
@@ -501,7 +501,7 @@ export default function HeroSection() {
                   className="text-sm font-medium"
                   style={{ color: "white", opacity: 0.92 }}
                 >
-                  Try Chatbot{" "}
+                  Call for Help{" "}
                   <span style={{ fontSize: "1.1em", marginLeft: "0.2em" }}>
                     →
                   </span>
