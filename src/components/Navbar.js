@@ -3,6 +3,7 @@
 import { useState, useContext } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import Link from "next/link";
+import Image from "next/image";
 import EmergencyButton from "./EmergencyButton";
 import AnimatedIcon from './AnimatedIcon';
 
@@ -30,23 +31,24 @@ export default function Navbar() {
                 style={{
                   width: "32px",
                   height: "32px",
-                  backgroundColor: "var(--color-primary)",
+                  // backgroundColor: "var(--color-primary)",
                   borderRadius: "var(--radius-md)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   marginRight: "0.75rem",
+                  padding: "4px",
                 }}
               >
-                <span
+                <Image
+                  src="/favicon.png"
+                  alt="Serene Logo"
+                  width={24}
+                  height={24}
                   style={{
-                    color: "white",
-                    fontSize: "1.25rem",
-                    fontWeight: "bold",
+                    borderRadius: "2px",
                   }}
-                >
-                  S
-                </span>
+                />
               </div>
               <span
                 style={{
