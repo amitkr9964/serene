@@ -82,6 +82,8 @@ export default function ChatPage() {
 
   const getBotResponse = async (message) => {
     try {
+      console.log('Sending message to API:', { message, session_id: sessionId, api_url: API_URL });
+      
       const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: {
@@ -89,12 +91,18 @@ export default function ChatPage() {
         },
         body: JSON.stringify({ message, session_id: sessionId }),
       });
+      
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       const data = await response.json();
+      console.log('Response data:', data);
       return data.reply;
     } catch (error) {
+      console.error('Chat API Error:', error);
       return "I'm sorry, I'm having trouble connecting to the server. Please try again.";
     }
   };
@@ -281,10 +289,10 @@ export default function ChatPage() {
       )}
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-full">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
         <header 
-          className="flex items-center justify-between px-4 py-3 md:px-6"
+          className="flex items-center justify-between px-4 py-3 md:px-6 flex-shrink-0"
           style={{ 
             backgroundColor: "var(--color-surface)",
             borderBottom: "1px solid var(--color-border)"
@@ -338,13 +346,16 @@ export default function ChatPage() {
         </header>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4" style={{ 
+          maxHeight: "calc(100vh - 200px)",
+          minHeight: "400px"
+        }}>
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} mb-4`}
             >
-              <div className={`flex max-w-xs md:max-w-md lg:max-w-lg ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div className={`flex max-w-xs md:max-w-md lg:max-w-lg ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'} items-end`}>
                 {/* Avatar */}
                 <div className={`flex-shrink-0 ${message.type === 'user' ? 'ml-3' : 'mr-3'}`}>
                   <div 
@@ -361,11 +372,11 @@ export default function ChatPage() {
 
                 {/* Message Content */}
                 <div
-                  className={`px-4 py-2 rounded-lg ${
+                  className={`px-4 py-3 rounded-lg ${
                     message.type === 'user'
                       ? 'rounded-br-none'
                       : 'rounded-bl-none'
-                  }`}
+                  } max-w-full`}
                   style={{
                     backgroundColor: message.type === 'user' 
                       ? "var(--color-secondary)" 
@@ -373,12 +384,13 @@ export default function ChatPage() {
                     color: message.type === 'user' 
                       ? "white" 
                       : "var(--color-text-primary)",
-                    boxShadow: "var(--shadow-sm)"
+                    boxShadow: "var(--shadow-sm)",
+                    wordWrap: "break-word"
                   }}
                 >
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm leading-relaxed">{message.content}</p>
                   <p 
-                    className={`text-xs mt-1 ${
+                    className={`text-xs mt-2 ${
                       message.type === 'user' ? 'text-blue-100' : 'opacity-60'
                     }`}
                   >
@@ -394,8 +406,8 @@ export default function ChatPage() {
 
           {/* Typing Indicator */}
           {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex mr-3">
+            <div className="flex justify-start mb-4">
+              <div className="flex mr-3 items-end">
                 <div 
                   className="w-8 h-8 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: "var(--color-primary)" }}
@@ -404,14 +416,15 @@ export default function ChatPage() {
                 </div>
               </div>
               <div
-                className="px-4 py-2 rounded-lg rounded-bl-none"
+                className="px-4 py-3 rounded-lg rounded-bl-none"
                 style={{
                   backgroundColor: "var(--color-surface-alt)",
                   color: "var(--color-text-primary)",
                   boxShadow: "var(--shadow-sm)"
                 }}
               >
-                <div className="flex space-x-1">
+                <div className="flex space-x-1 items-center">
+                  <span className="text-sm mr-2">Serene is typing</span>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
@@ -425,7 +438,7 @@ export default function ChatPage() {
 
         {/* Input Area */}
         <div 
-          className="p-4 md:p-6"
+          className="p-4 md:p-6 flex-shrink-0"
           style={{ 
             backgroundColor: "var(--color-surface)",
             borderTop: "1px solid var(--color-border)"
@@ -438,13 +451,13 @@ export default function ChatPage() {
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask anything about mental health, stress, anxiety, or type / for shortcuts..."
-              className="flex-1 px-4 py-3 rounded-lg focus:outline-none"
+              className="flex-1 px-4 py-3 rounded-lg focus:outline-none focus:ring-2"
               style={{
-                border: "none",
-                background: "transparent",
+                border: "1px solid var(--color-border)",
+                backgroundColor: "var(--color-background)",
                 fontSize: "1rem",
                 color: "var(--color-text-primary)",
-                outline: "none",
+                focusRingColor: "var(--color-primary)",
               }}
               maxLength={500}
             />

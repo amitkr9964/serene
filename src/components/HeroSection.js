@@ -1,6 +1,8 @@
 "use client"
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AnimatedIcon from "./AnimatedIcon";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Single languages array at module root (not inside function)
 const languages = [
@@ -27,6 +29,21 @@ export default function HeroSection() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
+  
+  // Ref for auto-scrolling chat messages container
+  const messagesContainerRef = useRef(null);
+
+  // Auto-scroll to bottom within the chat container only
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  };
+
+  // Effect to scroll when chatMessages or isChatLoading changes
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages, isChatLoading]);
 
   const handleChatSend = async () => {
     if (!chatInput.trim()) return;
@@ -46,12 +63,12 @@ export default function HeroSection() {
     try {
       console.log('Sending message to API:', currentInput);
       
-      const response = await fetch('http://127.0.0.1:5000/chat', {
+      const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: currentInput }),
+        body: JSON.stringify({ message: currentInput, session_id: 'hero_' + Date.now() }),
       });
       
       console.log('API response status:', response.status);
@@ -78,9 +95,9 @@ export default function HeroSection() {
       
       // More specific error messages
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        errorMessage = "Unable to connect to the chat service. Please make sure the Flask server is running on http://127.0.0.1:5000";
+        errorMessage = `Unable to connect to the chat service. Please make sure the server is running at ${API_URL}`;
       } else if (error.message.includes('HTTP error')) {
-        errorMessage = `Server error: ${error.message}. Please check the Flask server logs.`;
+        errorMessage = `Server error: ${error.message}. Please check the server logs.`;
       }
       
       const errorResponse = {
@@ -177,9 +194,239 @@ export default function HeroSection() {
         {/* Search Bar & Language Selector */}
         <div
           className="w-full flex justify-center items-center mb-2"
-          style={{ marginTop: "8rem" }}
+          // style={{ marginTop: "8rem" }}
         >
           <div className="flex flex-col items-center w-full max-w-xl gap-2">
+            {/* Chat Messages Area - Moved Outside Input Container */}
+            {chatMessages.length > 0 && (
+              <div
+                style={{
+                  width: "100%",
+                  marginBottom: "1.5rem",
+                  backgroundColor: "var(--color-surface)",
+                  borderRadius: "var(--radius-xl)",
+                  border: "1px solid var(--color-border)",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Chat Header */}
+                <div
+                  style={{
+                    padding: "1rem 1.25rem",
+                    borderBottom: "1px solid var(--color-border)",
+                    backgroundColor: "var(--color-background)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "50%",
+                      backgroundColor: "var(--color-primary)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <span style={{ color: "white", fontSize: "1rem" }}>🤖</span>
+                  </div>
+                  <div>
+                    <div style={{ 
+                      fontWeight: "600", 
+                      fontSize: "0.95rem",
+                      color: "var(--color-text-primary)"
+                    }}>
+                      Serene AI Assistant
+                    </div>
+                    <div style={{ 
+                      fontSize: "0.8rem", 
+                      color: "var(--color-text-secondary)",
+                      opacity: 0.8
+                    }}>
+                      Your mental health companion
+                    </div>
+                  </div>
+                  <div style={{ marginLeft: "auto" }}>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        fontSize: "0.75rem",
+                        padding: "0.25rem 0.75rem",
+                        borderRadius: "1rem",
+                        backgroundColor: "rgba(16, 185, 129, 0.1)",
+                        color: "var(--color-success)",
+                        fontWeight: "500",
+                      }}
+                    >
+                      <div style={{
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        backgroundColor: "var(--color-success)",
+                      }}></div>
+                      Online
+                    </span>
+                  </div>
+                </div>
+
+                {/* Messages Container */}
+                <div
+                  ref={messagesContainerRef}
+                  style={{
+                    maxHeight: "350px",
+                    overflowY: "auto",
+                    padding: "1.25rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1rem",
+                  }}
+                >
+                  {chatMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      style={{
+                        display: "flex",
+                        justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start',
+                        alignItems: "flex-end",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      {/* Avatar for bot messages */}
+                      {message.type === 'bot' && (
+                        <div
+                          style={{
+                            width: "28px",
+                            height: "28px",
+                            borderRadius: "50%",
+                            backgroundColor: "var(--color-primary)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <span style={{ color: "white", fontSize: "0.85rem" }}>🤖</span>
+                        </div>
+                      )}
+
+                      {/* Message Bubble */}
+                      <div
+                        style={{
+                          maxWidth: "75%",
+                          padding: "0.875rem 1.125rem",
+                          borderRadius: message.type === 'user' 
+                            ? "1.25rem 1.25rem 0.25rem 1.25rem"
+                            : "1.25rem 1.25rem 1.25rem 0.25rem",
+                          backgroundColor: message.type === 'user' 
+                            ? "var(--color-primary)" 
+                            : "var(--color-background)",
+                          color: message.type === 'user' 
+                            ? "white" 
+                            : "var(--color-text-primary)",
+                          fontSize: "0.925rem",
+                          lineHeight: "1.5",
+                          boxShadow: message.type === 'user'
+                            ? "0 2px 8px rgba(59, 130, 246, 0.15)"
+                            : "0 2px 8px rgba(0, 0, 0, 0.08)",
+                          border: message.type === 'bot' ? "1px solid var(--color-border)" : "none",
+                        }}
+                      >
+                        <div style={{ marginBottom: "0.5rem" }}>{message.content}</div>
+                        <div
+                          style={{
+                            fontSize: "0.75rem",
+                            opacity: message.type === 'user' ? 0.8 : 0.6,
+                            textAlign: message.type === 'user' ? 'right' : 'left',
+                            fontWeight: "400",
+                          }}
+                        >
+                          {message.timestamp.toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Avatar for user messages */}
+                      {message.type === 'user' && (
+                        <div
+                          style={{
+                            width: "28px",
+                            height: "28px",
+                            borderRadius: "50%",
+                            backgroundColor: "var(--color-secondary)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <span style={{ color: "white", fontSize: "0.85rem" }}>👤</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Typing Indicator */}
+                  {isChatLoading && (
+                    <div style={{ 
+                      display: "flex", 
+                      justifyContent: "flex-start",
+                      alignItems: "flex-end",
+                      gap: "0.75rem",
+                    }}>
+                      <div
+                        style={{
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "50%",
+                          backgroundColor: "var(--color-primary)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <span style={{ color: "white", fontSize: "0.85rem" }}>🤖</span>
+                      </div>
+                      <div
+                        style={{
+                          padding: "0.875rem 1.125rem",
+                          borderRadius: "1.25rem 1.25rem 1.25rem 0.25rem",
+                          backgroundColor: "var(--color-background)",
+                          border: "1px solid var(--color-border)",
+                          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                        }}
+                      >
+                        <div style={{ 
+                          display: "flex", 
+                          gap: "0.375rem", 
+                          alignItems: "center",
+                        }}>
+                          <span style={{ 
+                            fontSize: "0.85rem", 
+                            color: "var(--color-text-secondary)",
+                            marginRight: "0.5rem"
+                          }}>
+                            Thinking
+                          </span>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="w-full flex flex-col items-center">
               <label className="mb-2 text-base font-medium" style={{ color: 'var(--color-text-primary)' }}>
                 Search Serene
@@ -188,13 +435,23 @@ export default function HeroSection() {
                 style={{
                   backgroundColor: "var(--color-surface)",
                   border: "1px solid var(--color-border)",
-                  borderRadius: "var(--radius-lg)",
-                  padding: "0.75rem 1rem",
+                  borderRadius: "var(--radius-xl)",
+                  padding: "1rem 1.25rem",
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.75rem",
-                  boxShadow: "var(--shadow-sm)",
+                  gap: "1rem",
+                  boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
                   width: "100%",
+                  transition: "all 0.2s ease",
+                  position: "relative",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "var(--color-primary)";
+                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(59, 130, 246, 0.15)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "var(--color-border)";
+                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(0, 0, 0, 0.08)";
                 }}
               >
                 {/* Language Dropdown */}
@@ -206,16 +463,26 @@ export default function HeroSection() {
                     style={{
                       background: "none",
                       border: "1px solid var(--color-border)",
-                      borderRadius: "var(--radius-md)",
-                      padding: "0.5rem 0.75rem",
+                      borderRadius: "var(--radius-lg)",
+                      padding: "0.625rem 1rem",
                       cursor: "pointer",
                       color: "var(--color-text-primary)",
-                      fontSize: "0.9rem",
+                      fontSize: "0.95rem",
                       display: "flex",
                       alignItems: "center",
-                      gap: "0.5rem",
-                      backgroundColor: "var(--color-surface)",
-                      minWidth: "80px",
+                      gap: "0.625rem",
+                      backgroundColor: "var(--color-background)",
+                      minWidth: "90px",
+                      transition: "all 0.2s ease",
+                      fontWeight: "500",
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.borderColor = "var(--color-primary)";
+                      e.target.style.backgroundColor = "var(--color-surface)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.borderColor = "var(--color-border)";
+                      e.target.style.backgroundColor = "var(--color-background)";
                     }}
                   >
                     <span>
@@ -322,9 +589,10 @@ export default function HeroSection() {
                     </div>
                   )}
                 </div>
+
                 <input
                   type="text"
-                  placeholder="Ask anything about mental health, stress, anxiety, or type / for shortcuts..."
+                  placeholder="Ask anything about mental health, stress, anxiety..."
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyPress={(e) => {
@@ -337,15 +605,18 @@ export default function HeroSection() {
                     flex: 1,
                     border: "none",
                     background: "transparent",
-                    fontSize: "1rem",
+                    fontSize: "1.05rem",
                     color: "var(--color-text-primary)",
                     outline: "none",
+                    padding: "0.25rem 0",
+                    fontWeight: "400",
+                    lineHeight: "1.4",
                   }}
                 />
                 <div
                   style={{
                     display: "flex",
-                    gap: "0.5rem",
+                    gap: "0.75rem",
                     alignItems: "center",
                   }}
                 >
@@ -353,125 +624,90 @@ export default function HeroSection() {
                     style={{
                       background: "none",
                       border: "none",
-                      padding: "0.5rem",
-                      borderRadius: "var(--radius-md)",
+                      padding: "0.625rem",
+                      borderRadius: "var(--radius-lg)",
                       cursor: "pointer",
                       color: "var(--color-text-muted)",
+                      transition: "all 0.2s ease",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.backgroundColor = "var(--color-background)";
+                      e.target.style.color = "var(--color-primary)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.backgroundColor = "transparent";
+                      e.target.style.color = "var(--color-text-muted)";
                     }}
                   >
-                    <AnimatedIcon name="paperclip" size={18} />
+                    <AnimatedIcon name="paperclip" size={20} />
                   </button>
                   <button
                     style={{
                       background: "none",
                       border: "none",
-                      padding: "0.5rem",
-                      borderRadius: "var(--radius-md)",
+                      padding: "0.625rem",
+                      borderRadius: "var(--radius-lg)",
                       cursor: "pointer",
                       color: "var(--color-text-muted)",
+                      transition: "all 0.2s ease",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.backgroundColor = "var(--color-background)";
+                      e.target.style.color = "var(--color-primary)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.backgroundColor = "transparent";
+                      e.target.style.color = "var(--color-text-muted)";
                     }}
                   >
-                    <AnimatedIcon name="mic" size={18} />
+                    <AnimatedIcon name="mic" size={20} />
                   </button>
                   <button
                     onClick={handleChatSend}
                     disabled={!chatInput.trim() || isChatLoading}
                     style={{
-                      backgroundColor: "var(--color-primary)",
+                      backgroundColor: chatInput.trim() && !isChatLoading ? "var(--color-primary)" : "var(--color-border)",
                       border: "none",
-                      borderRadius: "var(--radius-md)",
-                      padding: "0.75rem",
+                      borderRadius: "var(--radius-lg)",
+                      padding: "0.75rem 1rem",
                       cursor: chatInput.trim() && !isChatLoading ? "pointer" : "not-allowed",
                       color: "white",
-                      opacity: chatInput.trim() && !isChatLoading ? 1 : 0.5,
+                      transition: "all 0.2s ease",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: "500",
+                      minWidth: "44px",
+                      minHeight: "44px",
+                      boxShadow: chatInput.trim() && !isChatLoading ? "0 2px 8px rgba(59, 130, 246, 0.25)" : "none",
+                    }}
+                    onMouseOver={(e) => {
+                      if (chatInput.trim() && !isChatLoading) {
+                        e.target.style.transform = "translateY(-1px)";
+                        e.target.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.35)";
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      if (chatInput.trim() && !isChatLoading) {
+                        e.target.style.transform = "translateY(0)";
+                        e.target.style.boxShadow = "0 2px 8px rgba(59, 130, 246, 0.25)";
+                      }
                     }}
                   >
                     {isChatLoading ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <AnimatedIcon name="send" size={16} color="white" />
+                      <AnimatedIcon name="send" size={18} color="white" />
                     )}
                   </button>
                 </div>
               </div>
-
-              {/* Chat Messages Area */}
-              {chatMessages.length > 0 && (
-                <div
-                  style={{
-                    marginTop: "1rem",
-                    padding: "1rem",
-                    backgroundColor: "var(--color-surface)",
-                    borderRadius: "var(--radius-lg)",
-                    border: "1px solid var(--color-border)",
-                    maxHeight: "300px",
-                    overflowY: "auto",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.75rem",
-                  }}
-                >
-                  {chatMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      style={{
-                        display: "flex",
-                        justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start',
-                      }}
-                    >
-                      <div
-                        style={{
-                          maxWidth: "80%",
-                          padding: "0.5rem 0.75rem",
-                          borderRadius: "var(--radius-md)",
-                          backgroundColor: message.type === 'user' 
-                            ? "var(--color-primary)" 
-                            : "var(--color-surface-alt)",
-                          color: message.type === 'user' 
-                            ? "white" 
-                            : "var(--color-text-primary)",
-                          fontSize: "0.9rem",
-                          lineHeight: "1.4",
-                        }}
-                      >
-                        <div>{message.content}</div>
-                        <div
-                          style={{
-                            fontSize: "0.75rem",
-                            opacity: 0.7,
-                            marginTop: "0.25rem",
-                            textAlign: message.type === 'user' ? 'right' : 'left',
-                          }}
-                        >
-                          {message.timestamp.toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {isChatLoading && (
-                    <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                      <div
-                        style={{
-                          padding: "0.5rem 0.75rem",
-                          borderRadius: "var(--radius-md)",
-                          backgroundColor: "var(--color-surface-alt)",
-                          color: "var(--color-text-primary)",
-                        }}
-                      >
-                        <div style={{ display: "flex", gap: "0.25rem", alignItems: "center" }}>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>
