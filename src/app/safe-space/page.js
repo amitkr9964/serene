@@ -827,7 +827,7 @@ export default function SafeSpacePage() {
 
               {/* Stress Trends */}
               <div className="p-6 rounded-lg" style={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-                <h3 className="font-semibold mb-4">Today's Stress Pattern</h3>
+                <h3 className="font-semibold mb-4">Today&apos;s Stress Pattern</h3>
                 <div className="space-y-3">
                   {stressData.trends.map((trend, index) => (
                     <div key={index} className="flex items-center justify-between p-3 rounded-md" style={{ backgroundColor: "var(--color-surface-alt)" }}>
