@@ -188,14 +188,24 @@ def run_test_api(test_name, responses):
 
 app = Flask(__name__)
 
-# Configure CORS for production - allow your deployed frontend
-CORS(app, origins=[
+# Configure CORS dynamically to support frontend URL changes
+allowed_origins = [
     'http://localhost:3000', 
     'http://localhost:3001', 
     'http://127.0.0.1:3000', 
     'http://127.0.0.1:3001',
-    'https://serene-sih.vercel.app'  # Your actual frontend domain
-], 
+    'https://serene-sih.vercel.app'  # Default friend's frontend domain
+]
+
+# Read additional origins from env var (comma-separated list)
+env_origins = os.getenv("ALLOWED_ORIGINS")
+if env_origins:
+    for origin in env_origins.split(","):
+        cleaned = origin.strip()
+        if cleaned:
+            allowed_origins.append(cleaned)
+
+CORS(app, origins=allowed_origins, 
      methods=['GET', 'POST', 'OPTIONS'], 
      allow_headers=['Content-Type'])
 
