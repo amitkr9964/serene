@@ -6,9 +6,12 @@ import Link from "next/link";
 import Image from "next/image";
 import EmergencyButton from "./EmergencyButton";
 import AnimatedIcon from './AnimatedIcon';
+import { useSession, signOut } from "next-auth/react";
 
 export default function Navbar() {
+  const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const { isDarkMode, toggleTheme } = useTheme();
 
   return (
@@ -172,14 +175,37 @@ export default function Navbar() {
                 animate={true}
               />
             </button>
-            <Link href="/auth/signin">
-              <button
-                className="btn-outline"
-                style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
-              >
-                Sign In
-              </button>
-            </Link>
+            {session ? (
+              <>
+                <Link href={
+                  session.user.userType === 'admin' ? '/admin/dashboard' :
+                  session.user.userType === 'counselor' ? `/counsellor/${session.user.id}` : '/dashboard'
+                }>
+                  <button
+                    className="btn-outline"
+                    style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
+                  >
+                    Dashboard ({session.user.name})
+                  </button>
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="btn-outline"
+                  style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", borderColor: 'var(--color-error)', color: 'var(--color-error)' }}
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link href="/auth/signin">
+                <button
+                  className="btn-outline"
+                  style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
+                >
+                  Sign In
+                </button>
+              </Link>
+            )}
             <Link href="/chat">
               <button
                 className="btn-primary"
@@ -308,18 +334,47 @@ export default function Navbar() {
                       animate={true}
                     />
                   </button>
-                  <div className="flex space-x-2">
-                    <Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
-                      <button
-                        className="btn-outline"
-                        style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
-                      >
-                        Sign In
-                      </button>
-                    </Link>
+                  <div className="flex flex-col space-y-2 w-full pt-2">
+                    {session ? (
+                      <>
+                        <Link 
+                          href={
+                            session.user.userType === 'admin' ? '/admin/dashboard' :
+                            session.user.userType === 'counselor' ? `/counsellor/${session.user.id}` : '/dashboard'
+                          } 
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <button
+                            className="btn-outline w-full"
+                            style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
+                          >
+                            Dashboard ({session.user.name})
+                          </button>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            signOut({ callbackUrl: '/' });
+                            setIsMenuOpen(false);
+                          }}
+                          className="btn-outline w-full"
+                          style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", borderColor: 'var(--color-error)', color: 'var(--color-error)' }}
+                        >
+                          Sign Out
+                        </button>
+                      </>
+                    ) : (
+                      <Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
+                        <button
+                          className="btn-outline w-full"
+                          style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
+                        >
+                          Sign In
+                        </button>
+                      </Link>
+                    )}
                     <Link href="/chat" onClick={() => setIsMenuOpen(false)}>
                       <button
-                        className="btn-primary"
+                        className="btn-primary w-full"
                         style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
                       >
                         Try Chatbot

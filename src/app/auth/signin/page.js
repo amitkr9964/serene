@@ -53,7 +53,7 @@ export default function SignInPage() {
         if (session?.user?.userType === 'admin') {
           router.push('/admin/dashboard');
         } else if (session?.user?.userType === 'counselor') {
-          router.push('/counselors/dashboard');
+          router.push(`/counsellor/${session.user.id}`);
         } else {
           router.push('/dashboard');
         }
@@ -124,7 +124,7 @@ export default function SignInPage() {
           if (session?.user?.userType === 'admin') {
             router.push('/admin/dashboard');
           } else if (session?.user?.userType === 'counselor') {
-            router.push('/counselors/dashboard');
+            router.push(`/counsellor/${session.user.id}`);
           } else {
             router.push('/dashboard');
           }
