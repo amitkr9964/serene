@@ -242,6 +242,7 @@ export default function Navbar() {
               <div className="flex flex-col space-y-4">
                 <Link
                   href="/"
+                  onClick={() => setIsMenuOpen(false)}
                   style={{
                     color: "var(--color-text-primary)",
                     textDecoration: "none",
@@ -253,6 +254,7 @@ export default function Navbar() {
                 </Link>
                 <a
                   href="#features"
+                  onClick={() => setIsMenuOpen(false)}
                   style={{
                     color: "var(--color-text-primary)",
                     textDecoration: "none",
@@ -264,6 +266,7 @@ export default function Navbar() {
                 </a>
                 <a
                   href="#about"
+                  onClick={() => setIsMenuOpen(false)}
                   style={{
                     color: "var(--color-text-primary)",
                     textDecoration: "none",
@@ -275,6 +278,7 @@ export default function Navbar() {
                 </a>
                 <a
                   href="#contact"
+                  onClick={() => setIsMenuOpen(false)}
                   style={{
                     color: "var(--color-text-primary)",
                     textDecoration: "none",
@@ -286,7 +290,10 @@ export default function Navbar() {
                 </a>
                 <div className="flex items-center justify-between pt-4">
                   <button
-                    onClick={toggleTheme}
+                    onClick={() => {
+                      toggleTheme();
+                      setIsMenuOpen(false);
+                    }}
                     style={{
                       background: "none",
                       border: "1px solid var(--color-border)",
@@ -302,7 +309,7 @@ export default function Navbar() {
                     />
                   </button>
                   <div className="flex space-x-2">
-                    <Link href="/auth/signin">
+                    <Link href="/auth/signin" onClick={() => setIsMenuOpen(false)}>
                       <button
                         className="btn-outline"
                         style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
@@ -310,7 +317,7 @@ export default function Navbar() {
                         Sign In
                       </button>
                     </Link>
-                    <Link href="/chat">
+                    <Link href="/chat" onClick={() => setIsMenuOpen(false)}>
                       <button
                         className="btn-primary"
                         style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}

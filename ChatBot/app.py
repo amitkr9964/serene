@@ -1,13 +1,23 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 import os
 import logging
+import re
 from dotenv import load_dotenv
 import google.generativeai as genai
 
+# Configure logging at the very top
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # ---------------- Setup Gemini (copied from gem3.py) ---------------------------------
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    logger.error("CRITICAL: GEMINI_API_KEY environment variable is not set!")
+    raise ValueError("GEMINI_API_KEY not set")
+
+genai.configure(api_key=api_key)
 
 # Configure safety settings to be less restrictive for mental health support
 safety_settings = [
@@ -86,10 +96,14 @@ tests = {
     }
 }
 
-SUICIDE_KEYWORDS = ["suicide", "kill myself", "end my life", "self harm", "kill someone", "kill", "harm", "destroy myself"]
+SUICIDE_KEYWORDS = [
+    "suicide", "kill myself", "end my life", "self harm", "kill someone",
+    "destroy myself", "kill my", "harm my", "harm myself", "want to die"
+]
 
 def is_crisis(message: str) -> bool:
-    return any(word in message.lower() for word in SUICIDE_KEYWORDS)
+    pattern = r'\b(' + '|'.join(re.escape(word) for word in SUICIDE_KEYWORDS) + r')\b'
+    return bool(re.search(pattern, message.lower()))
 
 def looks_distressed(text: str) -> bool:
     """Simple keyword detector for low mood / anxiety cues."""
@@ -158,7 +172,8 @@ def run_test_api(test_name, responses):
             severity = level
             break
     
-    result = f"📊 Your {test_name} score: {total}/{27 if test_name == 'PHQ-9' else 21} ({severity})\n\n"
+    max_score = 27 if test_name == 'PHQ-9' else 21
+    result = f"📊 Your {test_name} score: {total}/{max_score} ({severity})\n\n"
     
     if severity == "Minimal":
         result += "✅ Great! You seem to be doing well."
@@ -172,10 +187,6 @@ def run_test_api(test_name, responses):
     return result
 
 app = Flask(__name__)
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Configure CORS for production - allow your deployed frontend
 CORS(app, origins=[
@@ -191,14 +202,8 @@ CORS(app, origins=[
 # Store conversation sessions with state management
 conversation_sessions = {}
 
-@app.route('/chat', methods=['POST', 'OPTIONS'])
-@cross_origin()
+@app.route('/chat', methods=['POST'])
 def chat_api():
-    # Handle preflight OPTIONS request
-    if request.method == 'OPTIONS':
-        logger.info("Handling OPTIONS preflight request")
-        return '', 200
-        
     try:
         logger.info(f"Received request from: {request.remote_addr}")
         
@@ -208,6 +213,15 @@ def chat_api():
         
         if not user_input:
             return jsonify({'error': 'No message provided'}), 400
+
+        if len(user_input) > 2000:
+            return jsonify({'error': 'Message exceeds maximum length of 2000 characters'}), 400
+        
+        # Simple memory leak mitigation: clear oldest sessions if count is too high
+        if len(conversation_sessions) > 500:
+            keys = list(conversation_sessions.keys())
+            for k in keys[:100]:
+                conversation_sessions.pop(k, None)
         
         # Initialize session if not exists
         if session_id not in conversation_sessions:
@@ -222,6 +236,12 @@ def chat_api():
         
         session = conversation_sessions[session_id]
         history = session['history']
+        
+        # Cap history length to prevent memory leaks and token bloat
+        if len(history) > 20:
+            session['history'] = history[-20:]
+            history = session['history']
+
         
         logger.info(f"Session ID: {session_id}")
         logger.info(f"Current history length: {len(history)}")
@@ -348,6 +368,18 @@ def chat_api():
             session['history'].append((user_input, result))
             return jsonify({'reply': result})
         
+        # Handle response after test offer
+        if session['offered_test']:
+            session['offered_test'] = False  # Reset so it doesn't stay stuck
+            if user_input.lower() in ['yes', 'y', 'yeah', 'yep', 'ok', 'okay', 'sure']:
+                session['state'] = 'awaiting_test_choice'
+                reply = ("Great 🙂 Which one would you like?\n"
+                        "1. PHQ-9 (Depression)\n" 
+                        "2. GAD-7 (Anxiety)\n"
+                        "Enter 1 or 2:")
+                session['history'].append((user_input, reply))
+                return jsonify({'reply': reply})
+        
         # Handle distress detection and test offering (like gem3.py main function)
         if looks_distressed(user_input) and not session['offered_test']:
             session['offered_test'] = True
@@ -356,20 +388,6 @@ def chat_api():
                     "Type 'yes' to take a test, or continue the conversation normally.")
             session['history'].append((user_input, reply))
             return jsonify({'reply': reply})
-        
-        # Handle yes response after test offer
-        if session['offered_test'] and user_input.lower().startswith("y"):
-            session['offered_test'] = False
-            session['state'] = 'awaiting_test_choice'
-            reply = ("Great 🙂 Which one would you like?\n"
-                    "1. PHQ-9 (Depression)\n" 
-                    "2. GAD-7 (Anxiety)\n"
-                    "Enter 1 or 2:")
-            return jsonify({'reply': reply})
-        
-        # Normal chat flow (like gem3.py main function)
-        if not user_input:
-            return jsonify({'reply': "I'm here to listen. How can I help you today?"})
             
         # Get bot response using the same chat function as gem3.py
         reply = chat(user_input, history)
@@ -391,7 +409,6 @@ def chat_api():
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/health', methods=['GET'])
-@cross_origin()
 def health_check():
     return jsonify({'status': 'OK', 'message': 'Chat server is running'})
 

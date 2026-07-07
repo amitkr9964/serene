@@ -1,15 +1,29 @@
-import { MongoClient } from 'mongodb'
 import bcrypt from 'bcryptjs'
 import { NextResponse } from 'next/server'
-
-const client = new MongoClient(process.env.MONGODB_URI)
+import clientPromise from '../../../../lib/mongodb'
 
 export async function POST(request) {
   try {
-    const { name, email, password, userType } = await request.json()
+    const body = await request.json()
+    const { name, email, password, userType } = body
 
-    // Validation
-    if (!name || !email || !password || !userType) {
+    // Validate all fields exist and are strings to prevent NoSQL injection
+    if (
+      typeof name !== 'string' ||
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      typeof userType !== 'string'
+    ) {
+      return NextResponse.json(
+        { error: 'All fields must be valid strings' },
+        { status: 400 }
+      )
+    }
+
+    const trimmedName = name.trim()
+    const normalizedEmail = email.trim().toLowerCase()
+
+    if (!trimmedName || !normalizedEmail || !password || !userType) {
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
@@ -17,7 +31,7 @@ export async function POST(request) {
     }
 
     // Validate DTU email format
-    if (typeof email !== 'string' || !email.endsWith(process.env.NEXT_PUBLIC_INSTITUTION_DOMAIN)) {
+    if (!normalizedEmail.endsWith(process.env.NEXT_PUBLIC_INSTITUTION_DOMAIN)) {
       return NextResponse.json(
         { error: `Please use your DTU email address (${process.env.NEXT_PUBLIC_INSTITUTION_DOMAIN})` },
         { status: 400 }
@@ -32,19 +46,19 @@ export async function POST(request) {
       )
     }
 
-    // Password validation
-    if (password.length < 6) {
+    // Password validation (at least 6 chars, at least 1 letter and 1 number)
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{6,}$/
+    if (!passwordRegex.test(password)) {
       return NextResponse.json(
-        { error: 'Password must be at least 6 characters long' },
+        { error: 'Password must be at least 6 characters long and contain both letters and numbers' },
         { status: 400 }
       )
     }
 
-    await client.connect()
-    const db = client.db(process.env.DATABASE_NAME)
+    const db = (await clientPromise).db(process.env.DATABASE_NAME)
 
     // Check if user already exists
-    const existingUser = await db.collection('users').findOne({ email })
+    const existingUser = await db.collection('users').findOne({ email: normalizedEmail })
     if (existingUser) {
       return NextResponse.json(
         { error: 'User already exists with this email' },
@@ -57,8 +71,8 @@ export async function POST(request) {
 
     // Create user
     const user = {
-      name,
-      email,
+      name: trimmedName,
+      email: normalizedEmail,
       password: hashedPassword,
       userType,
       avatar: null,
@@ -114,7 +128,5 @@ export async function POST(request) {
       { error: 'Internal server error' },
       { status: 500 }
     )
-  } finally {
-    await client.close()
   }
 }

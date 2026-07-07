@@ -6,7 +6,7 @@ import Navbar from '../../components/Navbar';
 import { useTheme } from '../../contexts/ThemeContext';
 import AnimatedIcon from '../../components/AnimatedIcon';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState([]);

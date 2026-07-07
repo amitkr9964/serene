@@ -31,15 +31,22 @@ export default function SignInPage() {
     setIsLoading(true);
     setError('');
 
+    const normalizedEmail = formData.email.trim().toLowerCase();
+
     try {
       const result = await signIn('credentials', {
-        email: formData.email,
+        email: normalizedEmail,
         password: formData.password,
         redirect: false
       });
 
       if (result?.error) {
-        setError(result.error);
+        // Translate error message to generic sign-in failure if it's credentials-related
+        if (result.error.toLowerCase().includes('credentials') || result.error.toLowerCase().includes('fail')) {
+          setError('Invalid email or password');
+        } else {
+          setError(result.error);
+        }
       } else {
         // Get session to determine redirect based on user type
         const session = await getSession();
@@ -63,8 +70,25 @@ export default function SignInPage() {
     setIsLoading(true);
     setError('');
 
+    const trimmedName = formData.name.trim();
+    const normalizedEmail = formData.email.trim().toLowerCase();
+
+    if (!trimmedName) {
+      setError('Name is required');
+      setIsLoading(false);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    // Password validation (at least 6 characters, with letters and numbers)
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{6,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      setError('Password must be at least 6 characters long and contain both letters and numbers');
       setIsLoading(false);
       return;
     }
@@ -76,8 +100,8 @@ export default function SignInPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
+          name: trimmedName,
+          email: normalizedEmail,
           password: formData.password,
           userType: formData.userType
         }),
@@ -88,7 +112,7 @@ export default function SignInPage() {
       if (response.ok) {
         // Auto login after successful registration
         const result = await signIn('credentials', {
-          email: formData.email,
+          email: normalizedEmail,
           password: formData.password,
           redirect: false
         });

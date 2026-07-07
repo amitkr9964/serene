@@ -30,11 +30,13 @@
                 }
                 
                 const data = await response.json();
-                resultDiv.innerHTML = `<p style="color: green;">Success! Bot replied: ${data.reply}</p>`;
+                resultDiv.innerHTML = '<p style="color: green;">Success! Bot replied: <span id="reply-text"></span></p>';
+                document.getElementById('reply-text').textContent = data.reply;
                 
             } catch (error) {
                 console.error('Error:', error);
-                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                resultDiv.innerHTML = '<p style="color: red;">Error: <span id="error-text"></span></p>';
+                document.getElementById('error-text').textContent = error.message;
             }
         }
     </script>

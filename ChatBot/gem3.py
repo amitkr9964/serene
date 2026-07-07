@@ -1,10 +1,15 @@
 import os
+import re
 from dotenv import load_dotenv
 import google.generativeai as genai
 
 # ---------------- Setup Gemini ---------------------------------
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    raise ValueError("CRITICAL ERROR: GEMINI_API_KEY environment variable is not set!")
+
+genai.configure(api_key=api_key)
 
 # Configure safety settings to be less restrictive for mental health support
 safety_settings = [
@@ -83,10 +88,15 @@ tests = {
     }
 }
 
-SUICIDE_KEYWORDS = ["suicide", "kill myself", "end my life", "self harm", "kill someone", "kill", "harm", "destroy myself"]
+SUICIDE_KEYWORDS = [
+    "suicide", "kill myself", "end my life", "self harm", "kill someone",
+    "destroy myself", "kill my", "harm my", "harm myself", "want to die"
+]
 
 def is_crisis(message: str) -> bool:
-    return any(word in message.lower() for word in SUICIDE_KEYWORDS)
+    pattern = r'\b(' + '|'.join(re.escape(word) for word in SUICIDE_KEYWORDS) + r')\b'
+    return bool(re.search(pattern, message.lower()))
+
 
 # ---------------- Helper functions -----------------------------
 
@@ -162,7 +172,9 @@ def run_test(name):
             severity = level
             break
 
-    print(f"\n📊 Your score: {total}/27 ({severity})")
+    max_score = 27 if name == 'PHQ-9' else 21
+    print(f"\n📊 Your score: {total}/{max_score} ({severity})")
+
 
     if severity == "Minimal":
         print("✅ Great! You seem to be doing well.")

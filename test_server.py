@@ -4,19 +4,22 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-history = []
+session_histories = {}
 
 @app.route('/chat', methods=['POST'])
 def chat_api():
     try:
         data = request.json
         user_input = data.get('message', '')
+        session_id = data.get('session_id', 'default')
         
         # Simple echo response for testing
-        # Replace this with your actual gem3.chat() call when ready
         reply = f"Echo: {user_input}"
         
-        global history
+        if session_id not in session_histories:
+            session_histories[session_id] = []
+            
+        history = session_histories[session_id]
         history.append((user_input, reply))
         
         return jsonify({'reply': reply})
